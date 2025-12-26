@@ -4,6 +4,9 @@ const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
 
+// Connexion DB
+const sequelize = require("./config/db");
+
 const app = express();
 const routes = require("./routes/index");
 const resultatExamenRoutes = require("./routes/resultatExamen.routes"); // ✅ ajout
@@ -29,6 +32,19 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: "Erreur serveur", error: err.message });
 });
 
-// 🚀 Lancement du serveur
+// 🚀 Lancement du serveur avec connexion DB
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`✅ Serveur démarré sur le port ${PORT}`));
+
+(async () => {
+  try {
+    await sequelize.authenticate();
+    console.log("✅ Base de données connectée");
+
+    app.listen(PORT, () =>
+      console.log(`✅ Serveur démarré sur le port ${PORT}`)
+    );
+  } catch (error) {
+    console.error("❌ Erreur DB :", error.message);
+    process.exit(1);
+  }
+})();
