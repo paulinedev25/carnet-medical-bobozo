@@ -1,30 +1,60 @@
-import axios from "axios";
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+// src/api/medicaments.js
+import api from "../services/api";
 
-export const getMedicaments = async (token) => {
-  const res = await axios.get(`${API_URL}/medicaments`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return res.data;
+/**
+ * 📋 Récupérer tous les médicaments
+ */
+export const getMedicaments = async () => {
+  try {
+    const res = await api.get("/medicaments");
+    console.log("📥 Médicaments reçus :", res.data);
+    return res.data;
+  } catch (error) {
+    console.error("❌ Erreur getMedicaments :", error);
+    throw error;
+  }
 };
 
-export const createMedicament = async (token, payload) => {
-  const res = await axios.post(`${API_URL}/medicaments`, payload, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return res.data;
+/**
+ * ➕ Créer un médicament
+ */
+export const createMedicament = async (payload) => {
+  try {
+    console.log("📤 POST /medicaments →", payload);
+    const res = await api.post("/medicaments", payload);
+    return res.data;
+  } catch (error) {
+    console.error("❌ Erreur createMedicament :", error);
+    throw error;
+  }
 };
 
-export const updateMedicament = async (token, id, payload) => {
-  const res = await axios.put(`${API_URL}/medicaments/${id}`, payload, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return res.data;
+/**
+ * ✏️ Mettre à jour un médicament
+ */
+export const updateMedicament = async (id, payload) => {
+  try {
+    if (!id) throw new Error("ID médicament manquant");
+    console.log(`✏️ PUT /medicaments/${id} →`, payload);
+    const res = await api.put(`/medicaments/${id}`, payload);
+    return res.data;
+  } catch (error) {
+    console.error("❌ Erreur updateMedicament :", error);
+    throw error;
+  }
 };
 
-export const deleteMedicament = async (token, id) => {
-  const res = await axios.delete(`${API_URL}/medicaments/${id}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return res.data;
+/**
+ * 🗑️ Supprimer un médicament
+ */
+export const deleteMedicament = async (id) => {
+  try {
+    if (!id) throw new Error("ID médicament manquant");
+    console.log(`🗑️ DELETE /medicaments/${id}`);
+    const res = await api.delete(`/medicaments/${id}`);
+    return res.data;
+  } catch (error) {
+    console.error("❌ Erreur deleteMedicament :", error);
+    throw error;
+  }
 };

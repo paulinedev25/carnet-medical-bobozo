@@ -1,9 +1,32 @@
-import axios from "axios";
+import api from "./services/api";
 
-const API_URL = "http://localhost:5000/api"; // ⚠️ adapte l'URL à ton backend
-
-// Login avec email + mot_de_passe
+// 🔐 Login avec email + mot_de_passe
 export async function login(email, mot_de_passe) {
-  const res = await axios.post(`${API_URL}/auth/login`, { email, mot_de_passe });
-  return res.data; // { message, token, utilisateur }
+  const response = await api.post("/auth/login", {
+    email,
+    mot_de_passe,
+  });
+
+  const { token, utilisateur } = response.data;
+
+  // ✅ Stockage JWT
+  if (token) {
+    localStorage.setItem("token", token);
+    localStorage.setItem("utilisateur", JSON.stringify(utilisateur));
+  }
+
+  return response.data;
+}
+
+// 🚪 Logout
+export function logout() {
+  localStorage.removeItem("token");
+  localStorage.removeItem("utilisateur");
+  window.location.href = "/login";
+}
+
+// 👤 Utilisateur courant
+export function getCurrentUser() {
+  const user = localStorage.getItem("utilisateur");
+  return user ? JSON.parse(user) : null;
 }

@@ -1,7 +1,5 @@
 // src/api/examens.js
-import axios from "axios";
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+import api from "../services/api";
 
 /**
  * 📌 Helper pour logguer les erreurs sans casser l’UI
@@ -10,7 +8,7 @@ const handleApiError = (context, error) => {
   const status = error.response?.status;
   const message = error.response?.data?.error || error.message;
 
-  // Ignorer silencieusement le 304 (pas de nouvelles données)
+  // Ignorer silencieusement le 304
   if (status === 304) {
     console.debug(`ℹ️ [${context}] 304 Not Modified → données déjà à jour`);
     return { status: 304 };
@@ -21,17 +19,14 @@ const handleApiError = (context, error) => {
 };
 
 /**
- * 📋 Récupérer tous les examens (avec filtres)
+ * 📋 Récupérer les examens (avec filtres)
  */
-export const getExamens = async (token, params = {}) => {
+export const getExamens = async (params = {}) => {
   try {
     console.log("📥 GET /examens →", params);
-    const res = await axios.get(`${API_URL}/examens`, {
-      headers: { Authorization: `Bearer ${token}` },
-      params,
-    });
+    const res = await api.get("/examens", { params });
 
-    // ✅ Normalisation : on force toujours { rows, count }
+    // Normalisation
     if (Array.isArray(res.data)) {
       return { rows: res.data, count: res.data.length };
     }
@@ -49,17 +44,15 @@ export const getExamens = async (token, params = {}) => {
 };
 
 /**
- * 🩺 Créer un nouvel examen (prescription)
+ * 🩺 Créer un nouvel examen
  */
-export const createExamen = async (token, payload) => {
+export const createExamen = async (payload) => {
   try {
     if (!payload?.consultation_id || !payload?.type_examen) {
       throw new Error("consultation_id et type_examen sont requis");
     }
     console.log("📤 POST /examens →", payload);
-    const res = await axios.post(`${API_URL}/examens`, payload, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await api.post("/examens", payload);
     return res.data;
   } catch (error) {
     return handleApiError("createExamen", error);
@@ -67,15 +60,13 @@ export const createExamen = async (token, payload) => {
 };
 
 /**
- * ✏️ Modifier une prescription existante
+ * ✏️ Modifier un examen
  */
-export const updateExamen = async (token, id, payload) => {
+export const updateExamen = async (id, payload) => {
   try {
     if (!id) throw new Error("ID examen manquant");
     console.log(`✏️ PUT /examens/${id} →`, payload);
-    const res = await axios.put(`${API_URL}/examens/${id}`, payload, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await api.put(`/examens/${id}`, payload);
     return res.data;
   } catch (error) {
     return handleApiError("updateExamen", error);
@@ -85,13 +76,11 @@ export const updateExamen = async (token, id, payload) => {
 /**
  * 🗑️ Supprimer un examen
  */
-export const deleteExamen = async (token, id) => {
+export const deleteExamen = async (id) => {
   try {
     if (!id) throw new Error("ID examen manquant");
     console.log(`🗑️ DELETE /examens/${id}`);
-    const res = await axios.delete(`${API_URL}/examens/${id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await api.delete(`/examens/${id}`);
     return res.data;
   } catch (error) {
     return handleApiError("deleteExamen", error);
@@ -99,17 +88,13 @@ export const deleteExamen = async (token, id) => {
 };
 
 /**
- * 🔬 Laborantin : saisir ou remplacer tous les résultats
+ * 🔬 Laborantin : saisir/remplacer les résultats
  */
-export const updateResultat = async (token, id, { parametres }) => {
+export const updateResultat = async (id, { parametres }) => {
   try {
     if (!id) throw new Error("ID examen manquant");
     console.log(`📤 POST /examens/${id}/resultats →`, parametres);
-    const res = await axios.post(
-      `${API_URL}/examens/${id}/resultats`,
-      { parametres },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    const res = await api.post(`/examens/${id}/resultats`, { parametres });
     return res.data;
   } catch (error) {
     return handleApiError("updateResultat", error);
@@ -117,15 +102,13 @@ export const updateResultat = async (token, id, { parametres }) => {
 };
 
 /**
- * ✏️ Modifier un seul résultat (admin ou laborantin)
+ * ✏️ Modifier un résultat unique
  */
-export const updateResultatUnique = async (token, id, payload) => {
+export const updateResultatUnique = async (id, payload) => {
   try {
     if (!id) throw new Error("ID résultat manquant");
     console.log(`✏️ PUT /examens/resultats/${id} →`, payload);
-    const res = await axios.put(`${API_URL}/examens/resultats/${id}`, payload, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await api.put(`/examens/resultats/${id}`, payload);
     return res.data;
   } catch (error) {
     return handleApiError("updateResultatUnique", error);
@@ -135,15 +118,11 @@ export const updateResultatUnique = async (token, id, payload) => {
 /**
  * 🧑‍⚕️ Médecin : interpréter l’examen
  */
-export const interpretExamen = async (token, id, observations = "") => {
+export const interpretExamen = async (id, observations = "") => {
   try {
     if (!id) throw new Error("ID examen manquant");
     console.log(`🧾 PUT /examens/${id}/interpreter →`, observations);
-    const res = await axios.put(
-      `${API_URL}/examens/${id}/interpreter`,
-      { observations },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    const res = await api.put(`/examens/${id}/interpreter`, { observations });
     return res.data;
   } catch (error) {
     return handleApiError("interpretExamen", error);
@@ -153,12 +132,11 @@ export const interpretExamen = async (token, id, observations = "") => {
 /**
  * 📄 Télécharger le PDF d’un examen
  */
-export const downloadExamenPDF = async (token, id) => {
+export const downloadExamenPDF = async (id) => {
   try {
     if (!id) throw new Error("ID examen manquant");
     console.log(`📄 GET /examens/${id}/pdf`);
-    const res = await axios.get(`${API_URL}/examens/${id}/pdf`, {
-      headers: { Authorization: `Bearer ${token}` },
+    const res = await api.get(`/examens/${id}/pdf`, {
       responseType: "blob",
     });
     return res.data;

@@ -1,22 +1,23 @@
-import axios from "axios";
+// src/api/utilisateurs.js
+import api from "../services/api";
 
-const API_URL = "http://localhost:5000/api/utilisateurs"; // ✅ route backend
-
-// 🔹 Lire tous les utilisateurs (admin)
-export async function getUsers(token) {
+/**
+ * 🔹 Lire tous les utilisateurs (admin)
+ */
+export const getUsers = async () => {
   try {
-    const res = await axios.get(API_URL, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await api.get("/utilisateurs");
     return Array.isArray(res.data) ? res.data : [];
   } catch (err) {
     console.error("getUsers error:", err.response?.data || err);
     throw err.response?.data || { error: "Impossible de charger les utilisateurs" };
   }
-}
+};
 
-// 🔹 Créer un utilisateur (admin) avec photo
-export async function createUser(token, userData, file) {
+/**
+ * 🔹 Créer un utilisateur (admin) avec photo
+ */
+export const createUser = async (userData, file) => {
   try {
     const formData = new FormData();
     for (const key in userData) {
@@ -26,22 +27,20 @@ export async function createUser(token, userData, file) {
     }
     if (file) formData.append("photo", file);
 
-    const res = await axios.post(API_URL, formData, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
+    const res = await api.post("/utilisateurs", formData);
     return res.data;
   } catch (err) {
     console.error("createUser error:", err.response?.data || err);
     throw err.response?.data || { error: "Erreur lors de la création de l'utilisateur" };
   }
-}
+};
 
-// 🔹 Mettre à jour un utilisateur (admin) avec photo
-export async function updateUser(token, userId, userData, file) {
+/**
+ * 🔹 Mettre à jour un utilisateur (admin) avec photo
+ */
+export const updateUser = async (userId, userData, file) => {
   try {
     const formData = new FormData();
-
     for (const key in userData) {
       if (
         key !== "id" &&
@@ -53,58 +52,52 @@ export async function updateUser(token, userId, userData, file) {
         formData.append(key, userData[key]);
       }
     }
-
     if (file) formData.append("photo", file);
 
-    const res = await axios.put(`${API_URL}/${userId}`, formData, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
+    const res = await api.put(`/utilisateurs/${userId}`, formData);
     return res.data;
   } catch (err) {
     console.error("updateUser error:", err.response?.data || err);
     throw err.response?.data || { error: "Erreur lors de la mise à jour de l'utilisateur" };
   }
-}
+};
 
-// 🔹 Supprimer un utilisateur (admin)
-export async function deleteUser(token, userId) {
+/**
+ * 🔹 Supprimer un utilisateur (admin)
+ */
+export const deleteUser = async (userId) => {
   try {
-    const res = await axios.delete(`${API_URL}/${userId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await api.delete(`/utilisateurs/${userId}`);
     return res.data;
   } catch (err) {
     console.error("deleteUser error:", err.response?.data || err);
     throw err.response?.data || { error: "Erreur lors de la suppression de l'utilisateur" };
   }
-}
+};
 
-// 🔹 Reset mot de passe (admin)
-export async function resetPassword(token, userId, newPassword) {
+/**
+ * 🔹 Reset mot de passe (admin)
+ */
+export const resetPassword = async (userId, newPassword) => {
   try {
-    const res = await axios.put(
-      `${API_URL}/${userId}/password`,
-      { mot_de_passe: newPassword }, // ⚠️ doit correspondre au backend
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    const res = await api.put(`/utilisateurs/${userId}/password`, {
+      mot_de_passe: newPassword,
+    });
     return res.data;
   } catch (err) {
     console.error("resetPassword error:", err.response?.data || err);
     throw err.response?.data || { error: "Erreur lors du reset du mot de passe" };
   }
-}
+};
 
-// 🔹 Récupérer uniquement les médecins (role ou fonction)
-export async function getMedecins(token) {
+/**
+ * 🔹 Récupérer uniquement les médecins (role ou fonction)
+ */
+export const getMedecins = async () => {
   try {
-    const res = await axios.get(API_URL, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
+    const res = await api.get("/utilisateurs");
     const data = Array.isArray(res.data) ? res.data : [];
 
-    // 🔥 Inclure les rôles "medecin" ET les fonctions contenant "médecin"
     return data.filter((u) => {
       const role = (u.role || "").toLowerCase();
       const fonction = (u.fonction || "").toLowerCase();
@@ -114,4 +107,4 @@ export async function getMedecins(token) {
     console.error("getMedecins error:", err.response?.data || err);
     throw err.response?.data || { error: "Impossible de charger les médecins" };
   }
-}
+};
