@@ -1,11 +1,10 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  baseURL: import.meta.env.VITE_API_URL, // doit pointer vers Render
+  headers: { "Content-Type": "application/json" },
 });
+
 
 // 🔐 Ajouter automatiquement le token JWT
 api.interceptors.request.use(

@@ -1,5 +1,5 @@
 // src/api/patients.js
-import api from "../services/api";
+import api from "../../services/api";
 
 /**
  * 📋 Liste paginée + recherche

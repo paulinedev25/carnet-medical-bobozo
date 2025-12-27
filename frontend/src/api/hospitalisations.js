@@ -1,5 +1,5 @@
 // src/api/hospitalisations.js
-import api from "../services/api";
+import api from "../../services/api";
 
 /**
  * 📋 Lire hospitalisations (pagination + filtre)

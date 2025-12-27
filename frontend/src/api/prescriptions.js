@@ -1,5 +1,5 @@
 // src/api/prescriptions.js
-import api from "../services/api";
+import api from "../../services/api";
 
 /**
  * 📋 Liste des prescriptions (avec filtres)
