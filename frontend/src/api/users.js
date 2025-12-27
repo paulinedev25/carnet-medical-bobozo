@@ -1,5 +1,5 @@
 // src/api/utilisateurs.js
-import api from "../../services/api";
+import api from "../services/api";
 
 /**
  * 🔹 Lire tous les utilisateurs (admin)

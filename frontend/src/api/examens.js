@@ -1,5 +1,5 @@
 // src/api/examens.js
-import api from "../../services/api";
+import api from "../services/api";
 
 /**
  * 📌 Helper pour logguer les erreurs sans casser l’UI

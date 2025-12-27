@@ -1,5 +1,5 @@
 // src/api/medicaments.js
-import api from "../../services/api";
+import api from "../services/api";
 
 /**
  * 📋 Récupérer tous les médicaments
