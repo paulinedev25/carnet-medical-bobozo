@@ -19,46 +19,21 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
+      // 🔑 Envoi au backend
       const data = await login(email, motDePasse);
-
       console.log("Réponse API login =>", data);
 
-      if (!data?.utilisateur?.role) {
-        setError("⚠️ Impossible de déterminer le rôle de l'utilisateur.");
+      if (!data?.utilisateur?.role || !data?.token) {
+        setError("⚠️ Impossible de récupérer les informations de l'utilisateur.");
         setLoading(false);
         return;
       }
 
-      // ✅ Sauvegarde dans le context
-      loginUser(data.utilisateur);
+      // ✅ Sauvegarde complète dans le context
+      loginUser(data);
 
-      // ✅ Redirection intelligente selon rôle
-      const role = data.utilisateur.role.toLowerCase();
-
-      switch (role) {
-        case "admin":
-          navigate("/dashboard"); // DashboardRouter choisira AdminDashboard
-          break;
-        case "medecin":
-          navigate("/dashboard"); // DashboardRouter choisira MedecinDashboard
-          break;
-        case "pharmacien":
-          navigate("/dashboard"); // DashboardRouter choisira PharmacienDashboard
-          break;
-        case "receptionniste":
-          navigate("/dashboard");
-          break;
-        case "laborantin":
-          navigate("/dashboard");
-          break;
-        case "infirmier":
-          navigate("/dashboard");
-          break;
-        default:
-          console.warn("Rôle inconnu, redirection vers dashboard par défaut");
-          navigate("/dashboard");
-          break;
-      }
+      // ✅ Redirection vers le dashboard correspondant au rôle
+      navigate("/dashboard"); // DashboardRouter choisira le dashboard correct
     } catch (err) {
       console.error("Erreur login:", err);
       setError(err.response?.data?.error || "Identifiants incorrects");
@@ -86,6 +61,7 @@ export default function LoginPage() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           disabled={loading}
+          required
         />
 
         <input
@@ -95,6 +71,7 @@ export default function LoginPage() {
           value={motDePasse}
           onChange={(e) => setMotDePasse(e.target.value)}
           disabled={loading}
+          required
         />
 
         <button
