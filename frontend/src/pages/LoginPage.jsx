@@ -30,7 +30,7 @@ export default function LoginPage() {
       }
 
       // ✅ Sauvegarde dans le context
-      loginUser(data);
+      loginUser(data.utilisateur);
 
       // ✅ Redirection intelligente selon rôle
       const role = data.utilisateur.role.toLowerCase();
