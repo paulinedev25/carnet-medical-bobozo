@@ -118,7 +118,14 @@ export default function UsersPage() {
   try {
     if (editingUser) {
       // ✅ Conversion sûre de l'ID
-      const userId = Number(editingUser.id);
+      const userId = Number(editingUser?.id);
+
+if (!Number.isInteger(userId)) {
+  console.error("ID FINAL AVANT UPDATE:", editingUser);
+  setError("ID utilisateur invalide");
+  return;
+}
+
       if (isNaN(userId)) {
         setError("ID utilisateur invalide");
         return;
@@ -180,16 +187,24 @@ export default function UsersPage() {
   const handleEdit = (user) => {
   console.log("USER REÇU POUR EDIT:", user);
 
-  // ✅ ID sécurisé UNE FOIS POUR TOUTES
-  const safeUser = {
-    ...user,
-    id: Number(user.id),
-  };
-
-  if (isNaN(safeUser.id)) {
-    setError("Utilisateur invalide (ID non numérique)");
+  // 🔒 PROTECTION ABSOLUE
+  if (!user || typeof user !== "object") {
+    setError("Utilisateur invalide");
     return;
   }
+
+  const userId = Number(user.id);
+
+  if (!Number.isInteger(userId)) {
+    console.error("ID NON NUMÉRIQUE REÇU:", user.id);
+    setError("Utilisateur invalide (ID incorrect)");
+    return;
+  }
+
+  const safeUser = {
+    ...user,
+    id: userId,
+  };
 
   setEditingUser(safeUser);
 
