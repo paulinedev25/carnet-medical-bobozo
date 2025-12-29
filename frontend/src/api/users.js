@@ -1,111 +1,84 @@
-import api from "../services/api";
+import axios from "axios";
 
-/**
- * 🔹 Lire tous les utilisateurs (admin)
- */
-export const getUsers = async () => {
+const API_URL = "https://carnet-medical-bobozo-1.onrender.com/api/utilisateurs";
+
+// ✅ Récupérer tous les utilisateurs
+export const getUsers = async (token) => {
   try {
-    const res = await api.get("/utilisateurs");
-    console.log("getUsers response:", res); // 🔍 log complet
-    return Array.isArray(res.data) ? res.data : [];
+    const res = await axios.get(API_URL, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data; // normalement c'est un tableau d'utilisateurs
   } catch (err) {
-    console.error("getUsers error:", err.response?.data || err);
+    console.error("getUsers error:", err);
     throw err.response?.data || { error: "Impossible de charger les utilisateurs" };
   }
 };
 
-/**
- * 🔹 Créer un utilisateur (admin) avec photo
- */
-export const createUser = async (userData, file) => {
+// ✅ Créer un utilisateur
+export const createUser = async (userData, photoFile) => {
   try {
     const formData = new FormData();
-    for (const key in userData) {
-      if (key !== "id" && key !== "date_creation" && userData[key] != null && userData[key] !== "") {
+    Object.keys(userData).forEach((key) => {
+      if (userData[key] !== undefined && userData[key] !== null) {
         formData.append(key, userData[key]);
       }
-    }
-    if (file) formData.append("photo", file);
-
-    console.log("createUser FormData entries:");
-    for (let pair of formData.entries()) console.log(pair[0], pair[1]); // 🔍 log FormData
-
-    const res = await api.post("/utilisateurs", formData, {
-      headers: { "Content-Type": "multipart/form-data" }, // ✅ assure FormData
     });
+    if (photoFile) formData.append("photo", photoFile);
 
-    console.log("createUser response:", res); // 🔍 log complet
+    const res = await axios.post(API_URL, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
     return res.data;
   } catch (err) {
-    console.error("createUser error:", err.response?.data || err);
+    console.error("createUser error:", err);
     throw err.response?.data || { error: "Erreur lors de la création de l'utilisateur" };
   }
 };
 
-/**
- * 🔹 Mettre à jour un utilisateur (admin) avec photo
- */
-export const updateUser = async (userId, userData, file) => {
+// ✅ Mettre à jour un utilisateur
+export const updateUser = async (id, userData, photoFile) => {
   try {
-    const id = parseInt(userId, 10);
-    if (isNaN(id)) throw { error: "ID utilisateur invalide" };
-
     const formData = new FormData();
-    for (const key in userData) {
-      if (key !== "id" && key !== "date_creation" && userData[key] !== "" && userData[key] != null) {
+    Object.keys(userData).forEach((key) => {
+      if (userData[key] !== undefined && userData[key] !== null) {
         formData.append(key, userData[key]);
       }
-    }
-    if (file) formData.append("photo", file);
+    });
+    if (photoFile) formData.append("photo", photoFile);
 
-    console.log("updateUser FormData entries for ID", id);
-    for (let pair of formData.entries()) console.log(pair[0], pair[1]); // 🔍 log FormData
-
-    const res = await api.put(`/utilisateurs/${id}`, formData, {
+    const res = await axios.put(`${API_URL}/${id}`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
-
-    console.log("updateUser response:", res); // 🔍 log complet
     return res.data;
   } catch (err) {
-    console.error("updateUser error:", err.response?.data || err);
+    console.error("updateUser error:", err);
     throw err.response?.data || { error: "Erreur lors de la mise à jour de l'utilisateur" };
   }
 };
 
-/**
- * 🔹 Supprimer un utilisateur (admin)
- */
-export const deleteUser = async (userId) => {
+// ✅ Supprimer un utilisateur
+export const deleteUser = async (id) => {
   try {
-    const id = parseInt(userId, 10);
-    if (isNaN(id)) throw { error: "ID utilisateur invalide" };
-
-    const res = await api.delete(`/utilisateurs/${id}`);
-    console.log("deleteUser response:", res);
+    const res = await axios.delete(`${API_URL}/${id}`);
     return res.data;
   } catch (err) {
-    console.error("deleteUser error:", err.response?.data || err);
+    console.error("deleteUser error:", err);
     throw err.response?.data || { error: "Erreur lors de la suppression de l'utilisateur" };
   }
 };
 
-/**
- * 🔹 Reset mot de passe (admin)
- */
-export const resetPassword = async (userId, newPassword) => {
+// ✅ Réinitialiser le mot de passe
+export const resetPassword = async (id, newPassword) => {
   try {
-    const id = parseInt(userId, 10);
-    if (isNaN(id)) throw { error: "ID utilisateur invalide" };
-
-    const res = await api.put(`/utilisateurs/${id}/password`, { mot_de_passe: newPassword });
-    console.log("resetPassword response:", res);
+    const res = await axios.put(`${API_URL}/${id}/reset-password`, { mot_de_passe: newPassword });
     return res.data;
   } catch (err) {
-    console.error("resetPassword error:", err.response?.data || err);
-    throw err.response?.data || { error: "Erreur lors du reset du mot de passe" };
+    console.error("resetPassword error:", err);
+    throw err.response?.data || { error: "Erreur lors de la réinitialisation du mot de passe" };
   }
 };
+
 
 /**
  * 🔹 Récupérer uniquement les médecins (role ou fonction)
