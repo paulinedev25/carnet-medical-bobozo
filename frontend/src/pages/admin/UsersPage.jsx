@@ -106,53 +106,54 @@ export default function UsersPage() {
 
   // 🔹 Création / Mise à jour utilisateur
   const handleCreateOrUpdate = async (e) => {
-    e.preventDefault();
-    setError("");
+  e.preventDefault();
+  setError("");
 
-    if (!editingUser && !form.mot_de_passe) {
-      setError("Le mot de passe est obligatoire pour un nouvel utilisateur.");
-      return;
-    }
+  if (!editingUser && !form.mot_de_passe) {
+    setError("Le mot de passe est obligatoire pour un nouvel utilisateur.");
+    return;
+  }
 
-    try {
-      if (editingUser) {
-        const userId = Number(editingUser.id);
-        if (isNaN(userId)) {
-          setError("ID utilisateur invalide");
-          return;
-        }
-        console.log("Updating user:", userId, form, photoFile);
-        await updateUser(userId, form, photoFile);
-      } else {
-        console.log("Creating user:", form, photoFile);
-        await createUser(form, photoFile);
+  try {
+    if (editingUser) {
+      // ✅ Conversion sûre de l'ID
+      const userId = Number(editingUser.id);
+      if (isNaN(userId)) {
+        setError("ID utilisateur invalide");
+        return;
       }
-      resetForm();
-      fetchUsers();
-    } catch (err) {
-      console.error("Erreur create/update:", err);
-
-      if (err.response) {
-        if (err.response.status === 400) {
-          setError(err.response.data.message || "Champs requis manquants");
-        } else if (err.response.status === 401) {
-          setError("Non authentifié, veuillez vous reconnecter");
-        } else if (err.response.status === 403) {
-          setError(
-            "Accès refusé : seuls les administrateurs peuvent créer/modifier un utilisateur"
-          );
-        } else if (err.response.data?.message) {
-          setError(err.response.data.message);
-        } else {
-          setError("Erreur serveur inconnue");
-        }
-      } else if (err.request) {
-        setError("Impossible de contacter le serveur");
-      } else {
-        setError("Erreur inattendue : " + err.message);
-      }
+      console.log("Updating user:", userId, form, photoFile);
+      await updateUser(userId, form, photoFile); // envoie toujours un ID numérique
+    } else {
+      console.log("Creating user:", form, photoFile);
+      await createUser(form, photoFile);
     }
-  };
+    resetForm();
+    fetchUsers();
+  } catch (err) {
+    console.error("Erreur create/update:", err);
+
+    if (err.response) {
+      if (err.response.status === 400) {
+        setError(err.response.data.message || "Champs requis manquants");
+      } else if (err.response.status === 401) {
+        setError("Non authentifié, veuillez vous reconnecter");
+      } else if (err.response.status === 403) {
+        setError(
+          "Accès refusé : seuls les administrateurs peuvent créer/modifier un utilisateur"
+        );
+      } else if (err.response.data?.message) {
+        setError(err.response.data.message);
+      } else {
+        setError("Erreur serveur inconnue");
+      }
+    } else if (err.request) {
+      setError("Impossible de contacter le serveur");
+    } else {
+      setError("Erreur inattendue : " + err.message);
+    }
+  }
+};
 
   const resetForm = () => {
     setForm({
@@ -183,30 +184,42 @@ export default function UsersPage() {
     setShowForm(true);
   };
 
-  const handleDelete = async (userId) => {
-    if (!window.confirm("Voulez-vous vraiment supprimer cet utilisateur ?")) return;
-    try {
-      console.log("Deleting user ID:", userId);
-      await deleteUser(userId);
-      fetchUsers();
-    } catch (err) {
-      console.error(err);
-      setError(err.error || "Erreur lors de la suppression");
+  const handleDelete = async (user) => {
+  if (!window.confirm("Voulez-vous vraiment supprimer cet utilisateur ?")) return;
+  try {
+    // ✅ Conversion sûre de l'ID
+    const userId = Number(user.id);
+    if (isNaN(userId)) {
+      setError("ID utilisateur invalide pour suppression");
+      return;
     }
-  };
+    console.log("Deleting user ID:", userId);
+    await deleteUser(userId); // envoie toujours un ID numérique
+    fetchUsers();
+  } catch (err) {
+    console.error(err);
+    setError(err.error || "Erreur lors de la suppression");
+  }
+};
 
   const handleResetPassword = async (user) => {
-    const newPassword = window.prompt(`Nouveau mot de passe pour ${user.noms}:`);
-    if (!newPassword) return;
-    try {
-      console.log("Resetting password for user ID:", user.id);
-      await resetPassword(user.id, newPassword);
-      alert("Mot de passe réinitialisé avec succès !");
-    } catch (err) {
-      console.error(err);
-      setError(err.error || "Erreur lors du reset du mot de passe");
-    }
-  };
+  const userId = Number(user.id);
+  if (isNaN(userId)) {
+    setError("ID utilisateur invalide pour reset du mot de passe");
+    return;
+  }
+
+  const newPassword = window.prompt(`Nouveau mot de passe pour ${user.noms}:`);
+  if (!newPassword) return;
+  try {
+    console.log("Resetting password for user ID:", userId);
+    await resetPassword(userId, newPassword); // ID toujours numérique
+    alert("Mot de passe réinitialisé avec succès !");
+  } catch (err) {
+    console.error(err);
+    setError(err.error || "Erreur lors du reset du mot de passe");
+  }
+};
 
   // 🔹 Gestion upload photo / caméra
   const handlePhotoUpload = (e) => {
