@@ -1,5 +1,4 @@
 import { useEffect, useState, useRef } from "react";
-import { useAuth } from "../../auth/AuthContext";
 import {
   getUsers,
   createUser,
@@ -10,7 +9,6 @@ import {
 import { useNavigate } from "react-router-dom";
 
 export default function UsersPage() {
-  const { token } = useAuth();
   const navigate = useNavigate();
 
   const [users, setUsers] = useState([]);
@@ -50,7 +48,7 @@ export default function UsersPage() {
     setLoading(true);
     setError("");
     try {
-      const data = await getUsers(token);
+      const data = await getUsers();
       setUsers(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
@@ -61,8 +59,8 @@ export default function UsersPage() {
   };
 
   useEffect(() => {
-    if (token) fetchUsers();
-  }, [token]);
+    fetchUsers();
+  }, []);
 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -118,40 +116,20 @@ export default function UsersPage() {
 
     try {
       if (editingUser) {
-        // 🔹 Conversion explicite de l'ID pour éviter l'erreur PostgreSQL
         const userId = Number(editingUser.id);
         if (isNaN(userId)) {
           setError("ID utilisateur invalide");
           return;
         }
-        await updateUser(token, userId, form, photoFile);
+        await updateUser(userId, form, photoFile);
       } else {
-        await createUser(token, form, photoFile);
+        await createUser(form, photoFile);
       }
       resetForm();
       fetchUsers();
     } catch (err) {
-      console.error("Erreur create/update:", err.response?.data || err);
-
-      if (err.response) {
-        if (err.response.status === 400) {
-          setError(err.response.data.message || "Champs requis manquants");
-        } else if (err.response.status === 401) {
-          setError("Non authentifié, veuillez vous reconnecter");
-        } else if (err.response.status === 403) {
-          setError(
-            "Accès refusé : seuls les administrateurs peuvent créer/modifier un utilisateur"
-          );
-        } else if (err.response.data?.message) {
-          setError(err.response.data.message);
-        } else {
-          setError("Erreur serveur inconnue");
-        }
-      } else if (err.request) {
-        setError("Impossible de contacter le serveur");
-      } else {
-        setError("Erreur inattendue : " + err.message);
-      }
+      console.error("Erreur create/update:", err);
+      setError(err.error || err.message || "Erreur lors de la création ou mise à jour");
     }
   };
 
@@ -188,7 +166,7 @@ export default function UsersPage() {
     if (!window.confirm("Voulez-vous vraiment supprimer cet utilisateur ?"))
       return;
     try {
-      await deleteUser(token, userId);
+      await deleteUser(Number(userId));
       fetchUsers();
     } catch (err) {
       console.error(err);
@@ -197,12 +175,10 @@ export default function UsersPage() {
   };
 
   const handleResetPassword = async (user) => {
-    const newPassword = window.prompt(
-      `Nouveau mot de passe pour ${user.noms}:`
-    );
+    const newPassword = window.prompt(`Nouveau mot de passe pour ${user.noms}:`);
     if (!newPassword) return;
     try {
-      await resetPassword(token, user.id, newPassword);
+      await resetPassword(Number(user.id), newPassword);
       alert("Mot de passe réinitialisé avec succès !");
     } catch (err) {
       console.error(err);
@@ -232,9 +208,7 @@ export default function UsersPage() {
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
       canvas.toBlob((blob) => {
-        const file = new File([blob], `photo_${Date.now()}.png`, {
-          type: "image/png",
-        });
+        const file = new File([blob], `photo_${Date.now()}.png`, { type: "image/png" });
         setPhotoFile(file);
         setPhotoPreview(URL.createObjectURL(file));
       });

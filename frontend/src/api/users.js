@@ -20,7 +20,12 @@ export const createUser = async (userData, file) => {
   try {
     const formData = new FormData();
     for (const key in userData) {
-      if (key !== "id" && key !== "date_creation" && userData[key] != null) {
+      if (
+        key !== "id" &&
+        key !== "date_creation" &&
+        userData[key] != null &&
+        userData[key] !== ""
+      ) {
         formData.append(key, userData[key]);
       }
     }
@@ -39,7 +44,7 @@ export const createUser = async (userData, file) => {
  */
 export const updateUser = async (userId, userData, file) => {
   try {
-    const id = parseInt(userId, 10); // ✅ sécurisation de l'ID
+    const id = parseInt(userId, 10);
     if (isNaN(id)) throw { error: "ID utilisateur invalide" };
 
     const formData = new FormData();
