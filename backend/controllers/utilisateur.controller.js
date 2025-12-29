@@ -96,8 +96,12 @@ exports.create = async (req, res) => {
 // =============================
 exports.update = async (req, res) => {
   try {
-    const { id } = req.params;
-    const utilisateur = await Utilisateur.findByPk(id);
+    const userId = parseInt(req.params.id, 10);
+    if (isNaN(userId)) {
+      return res.status(400).json({ message: "ID utilisateur invalide" });
+    }
+
+    const utilisateur = await Utilisateur.findByPk(userId);
     if (!utilisateur)
       return res.status(404).json({ message: "Utilisateur non trouvé" });
 
