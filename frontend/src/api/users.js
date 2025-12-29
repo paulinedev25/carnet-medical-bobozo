@@ -1,4 +1,3 @@
-// src/api/utilisateurs.js
 import api from "../services/api";
 
 /**
@@ -21,8 +20,8 @@ export const createUser = async (userData, file) => {
   try {
     const formData = new FormData();
     for (const key in userData) {
-      if (key !== "id" && key !== "date_creation") {
-        formData.append(key, userData[key] ?? "");
+      if (key !== "id" && key !== "date_creation" && userData[key] != null) {
+        formData.append(key, userData[key]);
       }
     }
     if (file) formData.append("photo", file);
@@ -40,6 +39,9 @@ export const createUser = async (userData, file) => {
  */
 export const updateUser = async (userId, userData, file) => {
   try {
+    const id = parseInt(userId, 10); // ✅ sécurisation de l'ID
+    if (isNaN(id)) throw { error: "ID utilisateur invalide" };
+
     const formData = new FormData();
     for (const key in userData) {
       if (
@@ -54,7 +56,7 @@ export const updateUser = async (userId, userData, file) => {
     }
     if (file) formData.append("photo", file);
 
-    const res = await api.put(`/utilisateurs/${userId}`, formData);
+    const res = await api.put(`/utilisateurs/${id}`, formData);
     return res.data;
   } catch (err) {
     console.error("updateUser error:", err.response?.data || err);
@@ -67,7 +69,10 @@ export const updateUser = async (userId, userData, file) => {
  */
 export const deleteUser = async (userId) => {
   try {
-    const res = await api.delete(`/utilisateurs/${userId}`);
+    const id = parseInt(userId, 10);
+    if (isNaN(id)) throw { error: "ID utilisateur invalide" };
+
+    const res = await api.delete(`/utilisateurs/${id}`);
     return res.data;
   } catch (err) {
     console.error("deleteUser error:", err.response?.data || err);
@@ -80,7 +85,10 @@ export const deleteUser = async (userId) => {
  */
 export const resetPassword = async (userId, newPassword) => {
   try {
-    const res = await api.put(`/utilisateurs/${userId}/password`, {
+    const id = parseInt(userId, 10);
+    if (isNaN(id)) throw { error: "ID utilisateur invalide" };
+
+    const res = await api.put(`/utilisateurs/${id}/password`, {
       mot_de_passe: newPassword,
     });
     return res.data;

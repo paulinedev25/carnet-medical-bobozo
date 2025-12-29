@@ -118,36 +118,41 @@ export default function UsersPage() {
 
     try {
       if (editingUser) {
-        await updateUser(token, editingUser.id, form, photoFile);
+        // 🔹 Conversion explicite de l'ID pour éviter l'erreur PostgreSQL
+        const userId = Number(editingUser.id);
+        if (isNaN(userId)) {
+          setError("ID utilisateur invalide");
+          return;
+        }
+        await updateUser(token, userId, form, photoFile);
       } else {
         await createUser(token, form, photoFile);
       }
       resetForm();
       fetchUsers();
     } catch (err) {
-  console.error("Erreur create/update:", err.response?.data || err);
+      console.error("Erreur create/update:", err.response?.data || err);
 
-  if (err.response) {
-    // Erreur côté backend
-    if (err.response.status === 400) {
-      setError(err.response.data.message || "Champs requis manquants");
-    } else if (err.response.status === 401) {
-      setError("Non authentifié, veuillez vous reconnecter");
-    } else if (err.response.status === 403) {
-      setError("Accès refusé : seuls les administrateurs peuvent créer/modifier un utilisateur");
-    } else if (err.response.data?.message) {
-      setError(err.response.data.message);
-    } else {
-      setError("Erreur serveur inconnue");
+      if (err.response) {
+        if (err.response.status === 400) {
+          setError(err.response.data.message || "Champs requis manquants");
+        } else if (err.response.status === 401) {
+          setError("Non authentifié, veuillez vous reconnecter");
+        } else if (err.response.status === 403) {
+          setError(
+            "Accès refusé : seuls les administrateurs peuvent créer/modifier un utilisateur"
+          );
+        } else if (err.response.data?.message) {
+          setError(err.response.data.message);
+        } else {
+          setError("Erreur serveur inconnue");
+        }
+      } else if (err.request) {
+        setError("Impossible de contacter le serveur");
+      } else {
+        setError("Erreur inattendue : " + err.message);
+      }
     }
-  } else if (err.request) {
-    // Pas de réponse backend
-    setError("Impossible de contacter le serveur");
-  } else {
-    // Autre erreur
-    setError("Erreur inattendue : " + err.message);
-  }
-}
   };
 
   const resetForm = () => {
@@ -167,7 +172,7 @@ export default function UsersPage() {
     setEditingUser(null);
     setPhotoFile(null);
     setPhotoPreview(null);
-    setShowForm(false); // utilisé seulement quand on annule
+    setShowForm(false);
   };
 
   // 🔹 Modifier un utilisateur
@@ -259,22 +264,8 @@ export default function UsersPage() {
         <button
           onClick={() => {
             setEditingUser(null);
-            setForm({
-              noms: "",
-              matricule: "",
-              grade: "",
-              fonction: "",
-              service: "",
-              email: "",
-              mot_de_passe: "",
-              role: "medecin",
-              observation: "",
-              statut: "actif",
-              photo: "",
-            });
-            setPhotoFile(null);
-            setPhotoPreview(null);
-            setShowForm(true); // ouverture forcée
+            resetForm();
+            setShowForm(true);
           }}
           className="bg-green-600 text-white px-3 py-1 rounded"
         >
@@ -495,10 +486,7 @@ export default function UsersPage() {
             <tbody>
               {paginatedUsers.length === 0 && (
                 <tr>
-                  <td
-                    colSpan="14"
-                    className="p-4 text-center text-gray-500"
-                  >
+                  <td colSpan="14" className="p-4 text-center text-gray-500">
                     Aucun utilisateur
                   </td>
                 </tr>
