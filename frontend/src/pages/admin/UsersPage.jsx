@@ -52,7 +52,15 @@ export default function UsersPage() {
     try {
       const data = await getUsers(token);
       console.log("Fetched users:", data);
-      setUsers(Array.isArray(data) ? data : []);
+
+      // ✅ Transformation pour forcer id numérique et filtrer les invalides
+      const sanitizedData = Array.isArray(data)
+        ? data
+            .map(u => ({ ...u, id: Number(u.id) }))
+            .filter(u => !isNaN(u.id)) // garde seulement les ID valides
+        : [];
+
+      setUsers(sanitizedData);
     } catch (err) {
       console.error("fetchUsers error:", err);
       setError(err.error || "Impossible de charger les utilisateurs");
@@ -106,62 +114,53 @@ export default function UsersPage() {
 
   // 🔹 Création / Mise à jour utilisateur
   const handleCreateOrUpdate = async (e) => {
-  e.preventDefault();
-  console.log("ID AVANT UPDATE:", editingUser?.id, typeof editingUser?.id);
-  setError("");
+    e.preventDefault();
+    setError("");
 
-  if (!editingUser && !form.mot_de_passe) {
-    setError("Le mot de passe est obligatoire pour un nouvel utilisateur.");
-    return;
-  }
-
-  try {
-    if (editingUser) {
-      // ✅ Conversion sûre de l'ID
-      const userId = Number(editingUser?.id);
-
-if (!Number.isInteger(userId)) {
-  console.error("ID FINAL AVANT UPDATE:", editingUser);
-  setError("ID utilisateur invalide");
-  return;
-}
-
-      if (isNaN(userId)) {
-        setError("ID utilisateur invalide");
-        return;
-      }
-      console.log("Updating user:", userId, form, photoFile);
-      await updateUser(userId, form, photoFile); // envoie toujours un ID numérique
-    } else {
-      console.log("Creating user:", form, photoFile);
-      await createUser(form, photoFile);
+    if (!editingUser && !form.mot_de_passe) {
+      setError("Le mot de passe est obligatoire pour un nouvel utilisateur.");
+      return;
     }
-    resetForm();
-    fetchUsers();
-  } catch (err) {
-    console.error("Erreur create/update:", err);
 
-    if (err.response) {
-      if (err.response.status === 400) {
-        setError(err.response.data.message || "Champs requis manquants");
-      } else if (err.response.status === 401) {
-        setError("Non authentifié, veuillez vous reconnecter");
-      } else if (err.response.status === 403) {
-        setError(
-          "Accès refusé : seuls les administrateurs peuvent créer/modifier un utilisateur"
-        );
-      } else if (err.response.data?.message) {
-        setError(err.response.data.message);
+    try {
+      if (editingUser) {
+        const userId = Number(editingUser.id);
+        if (!Number.isInteger(userId)) {
+          setError("ID utilisateur invalide");
+          return;
+        }
+        console.log("Updating user:", userId, form, photoFile);
+        await updateUser(userId, form, photoFile);
       } else {
-        setError("Erreur serveur inconnue");
+        console.log("Creating user:", form, photoFile);
+        await createUser(form, photoFile);
       }
-    } else if (err.request) {
-      setError("Impossible de contacter le serveur");
-    } else {
-      setError("Erreur inattendue : " + err.message);
+      resetForm();
+      fetchUsers();
+    } catch (err) {
+      console.error("Erreur create/update:", err);
+
+      if (err.response) {
+        if (err.response.status === 400) {
+          setError(err.response.data.message || "Champs requis manquants");
+        } else if (err.response.status === 401) {
+          setError("Non authentifié, veuillez vous reconnecter");
+        } else if (err.response.status === 403) {
+          setError(
+            "Accès refusé : seuls les administrateurs peuvent créer/modifier un utilisateur"
+          );
+        } else if (err.response.data?.message) {
+          setError(err.response.data.message);
+        } else {
+          setError("Erreur serveur inconnue");
+        }
+      } else if (err.request) {
+        setError("Impossible de contacter le serveur");
+      } else {
+        setError("Erreur inattendue : " + err.message);
+      }
     }
-  }
-};
+  };
 
   const resetForm = () => {
     setForm({
@@ -185,83 +184,66 @@ if (!Number.isInteger(userId)) {
 
   // 🔹 Modifier un utilisateur
   const handleEdit = (user) => {
-  console.log("USER REÇU POUR EDIT:", user);
-
-  // 🔒 PROTECTION ABSOLUE
-  if (!user || typeof user !== "object") {
-    setError("Utilisateur invalide");
-    return;
-  }
-
-  const userId = Number(user.id);
-
-  if (!Number.isInteger(userId)) {
-    console.error("ID NON NUMÉRIQUE REÇU:", user.id);
-    setError("Utilisateur invalide (ID incorrect)");
-    return;
-  }
-
-  const safeUser = {
-    ...user,
-    id: userId,
-  };
-
-  setEditingUser(safeUser);
-
-  setForm({
-    noms: user.noms || "",
-    matricule: user.matricule || "",
-    grade: user.grade || "",
-    fonction: user.fonction || "",
-    service: user.service || "",
-    email: user.email || "",
-    mot_de_passe: "",
-    role: user.role || "medecin",
-    observation: user.observation || "",
-    statut: user.statut || "actif",
-  });
-
-  setPhotoFile(null);
-  setPhotoPreview(user.photo || null);
-  setShowForm(true);
-};
-
-  const handleDelete = async (user) => {
-  if (!window.confirm("Voulez-vous vraiment supprimer cet utilisateur ?")) return;
-  try {
-    // ✅ Conversion sûre de l'ID
-    const userId = Number(user.id);
-    if (isNaN(userId)) {
-      setError("ID utilisateur invalide pour suppression");
+    if (!user || !Number.isInteger(Number(user.id))) {
+      setError("Utilisateur invalide (ID incorrect)");
       return;
     }
-    console.log("Deleting user ID:", userId);
-    await deleteUser(userId); // envoie toujours un ID numérique
-    fetchUsers();
-  } catch (err) {
-    console.error(err);
-    setError(err.error || "Erreur lors de la suppression");
-  }
-};
+
+    setEditingUser({ ...user, id: Number(user.id) });
+
+    setForm({
+      noms: user.noms || "",
+      matricule: user.matricule || "",
+      grade: user.grade || "",
+      fonction: user.fonction || "",
+      service: user.service || "",
+      email: user.email || "",
+      mot_de_passe: "",
+      role: user.role || "medecin",
+      observation: user.observation || "",
+      statut: user.statut || "actif",
+    });
+
+    setPhotoFile(null);
+    setPhotoPreview(user.photo || null);
+    setShowForm(true);
+  };
+
+  const handleDelete = async (user) => {
+    if (!window.confirm("Voulez-vous vraiment supprimer cet utilisateur ?")) return;
+    try {
+      const userId = Number(user.id);
+      if (isNaN(userId)) {
+        setError("ID utilisateur invalide pour suppression");
+        return;
+      }
+      console.log("Deleting user ID:", userId);
+      await deleteUser(userId);
+      fetchUsers();
+    } catch (err) {
+      console.error(err);
+      setError(err.error || "Erreur lors de la suppression");
+    }
+  };
 
   const handleResetPassword = async (user) => {
-  const userId = Number(user.id);
-  if (isNaN(userId)) {
-    setError("ID utilisateur invalide pour reset du mot de passe");
-    return;
-  }
+    const userId = Number(user.id);
+    if (isNaN(userId)) {
+      setError("ID utilisateur invalide pour reset du mot de passe");
+      return;
+    }
 
-  const newPassword = window.prompt(`Nouveau mot de passe pour ${user.noms}:`);
-  if (!newPassword) return;
-  try {
-    console.log("Resetting password for user ID:", userId);
-    await resetPassword(userId, newPassword); // ID toujours numérique
-    alert("Mot de passe réinitialisé avec succès !");
-  } catch (err) {
-    console.error(err);
-    setError(err.error || "Erreur lors du reset du mot de passe");
-  }
-};
+    const newPassword = window.prompt(`Nouveau mot de passe pour ${user.noms}:`);
+    if (!newPassword) return;
+    try {
+      console.log("Resetting password for user ID:", userId);
+      await resetPassword(userId, newPassword);
+      alert("Mot de passe réinitialisé avec succès !");
+    } catch (err) {
+      console.error(err);
+      setError(err.error || "Erreur lors du reset du mot de passe");
+    }
+  };
 
   // 🔹 Gestion upload photo / caméra
   const handlePhotoUpload = (e) => {
