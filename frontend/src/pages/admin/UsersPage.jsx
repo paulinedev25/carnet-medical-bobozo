@@ -107,6 +107,7 @@ export default function UsersPage() {
   // 🔹 Création / Mise à jour utilisateur
   const handleCreateOrUpdate = async (e) => {
   e.preventDefault();
+  console.log("ID AVANT UPDATE:", editingUser?.id, typeof editingUser?.id);
   setError("");
 
   if (!editingUser && !form.mot_de_passe) {
@@ -177,12 +178,38 @@ export default function UsersPage() {
 
   // 🔹 Modifier un utilisateur
   const handleEdit = (user) => {
-    setEditingUser(user);
-    setForm({ ...user, mot_de_passe: "" });
-    setPhotoFile(null);
-    setPhotoPreview(user.photo || null);
-    setShowForm(true);
+  console.log("USER REÇU POUR EDIT:", user);
+
+  // ✅ ID sécurisé UNE FOIS POUR TOUTES
+  const safeUser = {
+    ...user,
+    id: Number(user.id),
   };
+
+  if (isNaN(safeUser.id)) {
+    setError("Utilisateur invalide (ID non numérique)");
+    return;
+  }
+
+  setEditingUser(safeUser);
+
+  setForm({
+    noms: user.noms || "",
+    matricule: user.matricule || "",
+    grade: user.grade || "",
+    fonction: user.fonction || "",
+    service: user.service || "",
+    email: user.email || "",
+    mot_de_passe: "",
+    role: user.role || "medecin",
+    observation: user.observation || "",
+    statut: user.statut || "actif",
+  });
+
+  setPhotoFile(null);
+  setPhotoPreview(user.photo || null);
+  setShowForm(true);
+};
 
   const handleDelete = async (user) => {
   if (!window.confirm("Voulez-vous vraiment supprimer cet utilisateur ?")) return;
