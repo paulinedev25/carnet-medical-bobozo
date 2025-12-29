@@ -549,7 +549,7 @@ export default function UsersPage() {
                       Modifier
                     </button>
                     <button
-                      onClick={() => handleDelete(u.id)}
+                      onClick={() => handleDelete(u)}
                       className="bg-red-600 text-white px-2 py-1 rounded"
                     >
                       Supprimer
