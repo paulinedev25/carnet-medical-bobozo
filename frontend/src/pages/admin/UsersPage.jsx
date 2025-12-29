@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { useAuth } from "../../auth/AuthContext";
 import {
   getUsers,
   createUser,
@@ -9,6 +10,7 @@ import {
 import { useNavigate } from "react-router-dom";
 
 export default function UsersPage() {
+  const { token } = useAuth();
   const navigate = useNavigate();
 
   const [users, setUsers] = useState([]);
@@ -48,10 +50,11 @@ export default function UsersPage() {
     setLoading(true);
     setError("");
     try {
-      const data = await getUsers();
+      const data = await getUsers(token);
+      console.log("Fetched users:", data);
       setUsers(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error(err);
+      console.error("fetchUsers error:", err);
       setError(err.error || "Impossible de charger les utilisateurs");
     } finally {
       setLoading(false);
@@ -59,18 +62,15 @@ export default function UsersPage() {
   };
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    if (token) fetchUsers();
+  }, [token]);
 
-  const handleChange = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   // 🔹 Tri
   const handleSort = (key) => {
     let direction = "asc";
-    if (sortConfig.key === key && sortConfig.direction === "asc") {
-      direction = "desc";
-    }
+    if (sortConfig.key === key && sortConfig.direction === "asc") direction = "desc";
     setSortConfig({ key, direction });
   };
 
@@ -121,15 +121,36 @@ export default function UsersPage() {
           setError("ID utilisateur invalide");
           return;
         }
+        console.log("Updating user:", userId, form, photoFile);
         await updateUser(userId, form, photoFile);
       } else {
+        console.log("Creating user:", form, photoFile);
         await createUser(form, photoFile);
       }
       resetForm();
       fetchUsers();
     } catch (err) {
       console.error("Erreur create/update:", err);
-      setError(err.error || err.message || "Erreur lors de la création ou mise à jour");
+
+      if (err.response) {
+        if (err.response.status === 400) {
+          setError(err.response.data.message || "Champs requis manquants");
+        } else if (err.response.status === 401) {
+          setError("Non authentifié, veuillez vous reconnecter");
+        } else if (err.response.status === 403) {
+          setError(
+            "Accès refusé : seuls les administrateurs peuvent créer/modifier un utilisateur"
+          );
+        } else if (err.response.data?.message) {
+          setError(err.response.data.message);
+        } else {
+          setError("Erreur serveur inconnue");
+        }
+      } else if (err.request) {
+        setError("Impossible de contacter le serveur");
+      } else {
+        setError("Erreur inattendue : " + err.message);
+      }
     }
   };
 
@@ -163,10 +184,10 @@ export default function UsersPage() {
   };
 
   const handleDelete = async (userId) => {
-    if (!window.confirm("Voulez-vous vraiment supprimer cet utilisateur ?"))
-      return;
+    if (!window.confirm("Voulez-vous vraiment supprimer cet utilisateur ?")) return;
     try {
-      await deleteUser(Number(userId));
+      console.log("Deleting user ID:", userId);
+      await deleteUser(userId);
       fetchUsers();
     } catch (err) {
       console.error(err);
@@ -178,7 +199,8 @@ export default function UsersPage() {
     const newPassword = window.prompt(`Nouveau mot de passe pour ${user.noms}:`);
     if (!newPassword) return;
     try {
-      await resetPassword(Number(user.id), newPassword);
+      console.log("Resetting password for user ID:", user.id);
+      await resetPassword(user.id, newPassword);
       alert("Mot de passe réinitialisé avec succès !");
     } catch (err) {
       console.error(err);
@@ -190,6 +212,7 @@ export default function UsersPage() {
   const handlePhotoUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    console.log("Uploaded photo file:", file);
     setPhotoFile(file);
     setPhotoPreview(URL.createObjectURL(file));
   };
@@ -208,7 +231,10 @@ export default function UsersPage() {
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
       canvas.toBlob((blob) => {
-        const file = new File([blob], `photo_${Date.now()}.png`, { type: "image/png" });
+        const file = new File([blob], `photo_${Date.now()}.png`, {
+          type: "image/png",
+        });
+        console.log("Captured photo file:", file);
         setPhotoFile(file);
         setPhotoPreview(URL.createObjectURL(file));
       });
@@ -249,10 +275,7 @@ export default function UsersPage() {
 
       {/* Formulaire */}
       {showForm && (
-        <form
-          onSubmit={handleCreateOrUpdate}
-          className="mb-4 bg-white p-4 rounded shadow"
-        >
+        <form onSubmit={handleCreateOrUpdate} className="mb-4 bg-white p-4 rounded shadow">
           {error && <p className="text-red-500 mb-2">{error}</p>}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <input
@@ -373,10 +396,7 @@ export default function UsersPage() {
             </div>
           </div>
           <div className="mt-3 flex gap-2">
-            <button
-              type="submit"
-              className="bg-blue-600 text-white px-3 py-1 rounded"
-            >
+            <button type="submit" className="bg-blue-600 text-white px-3 py-1 rounded">
               {editingUser ? "Mettre à jour" : "Créer"}
             </button>
             <button
@@ -445,11 +465,7 @@ export default function UsersPage() {
                   "date_creation",
                   "observation",
                 ].map((col) => (
-                  <th
-                    key={col}
-                    className="p-2 text-left"
-                    onClick={() => handleSort(col)}
-                  >
+                  <th key={col} className="p-2 text-left" onClick={() => handleSort(col)}>
                     {col.toUpperCase()}
                   </th>
                 ))}
@@ -477,18 +493,12 @@ export default function UsersPage() {
                   <td className="p-2">{u.role}</td>
                   <td className="p-2">{u.statut}</td>
                   <td className="p-2">
-                    {u.date_creation
-                      ? new Date(u.date_creation).toLocaleDateString()
-                      : "-"}
+                    {u.date_creation ? new Date(u.date_creation).toLocaleDateString() : "-"}
                   </td>
                   <td className="p-2">{u.observation || "-"}</td>
                   <td className="p-2">
                     {u.photo && (
-                      <img
-                        src={u.photo}
-                        alt="User"
-                        className="w-10 h-10 object-cover rounded"
-                      />
+                      <img src={u.photo} alt="User" className="w-10 h-10 object-cover rounded" />
                     )}
                   </td>
                   <td className="p-2 space-x-1">
