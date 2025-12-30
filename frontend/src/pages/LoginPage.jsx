@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { login } from "../api/auth";
 import { useAuth } from "../auth/AuthContext";
+import api from "../services/api"; // ✅ Assure-toi d'importer ton instance Axios
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -23,20 +24,28 @@ export default function LoginPage() {
       const data = await login(email, motDePasse);
       console.log("Réponse API login =>", data);
 
-      if (!data?.utilisateur?.role || !data?.token) {
+      if (!data?.utilisateur || !data?.token) {
         setError("⚠️ Impossible de récupérer les informations de l'utilisateur.");
-        setLoading(false);
         return;
       }
 
       // ✅ Sauvegarde complète dans le context
       loginUser(data);
 
+      // ✅ Stockage du token dans localStorage pour l'API
+      localStorage.setItem("token", data.token);
+
       // ✅ Redirection vers le dashboard correspondant au rôle
-      navigate("/dashboard"); // DashboardRouter choisira le dashboard correct
+      navigate("/dashboard");
     } catch (err) {
       console.error("Erreur login:", err);
-      setError(err.response?.data?.error || "Identifiants incorrects");
+      if (err.response?.status === 401) {
+        setError("❌ Email ou mot de passe incorrect");
+      } else if (err.response?.status === 500) {
+        setError("⚠️ Erreur serveur, réessayez plus tard");
+      } else {
+        setError(err.response?.data?.error || "Erreur inconnue");
+      }
     } finally {
       setLoading(false);
     }

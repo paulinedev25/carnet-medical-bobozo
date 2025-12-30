@@ -1,26 +1,20 @@
-import axios from "axios";
+// src/api/users.js
+import api from "../services/api";
 
-const API_BASE_URL = "https://carnet-medical-bobozo-1.onrender.com/api";
-const USERS_URL = `${API_BASE_URL}/utilisateurs`;
+const USERS_URL = "/utilisateurs";
 
 /* ===========================
    UTILISATEURS
 =========================== */
 
 // ✅ Récupérer tous les utilisateurs
-export const getUsers = async (token) => {
+export const getUsers = async () => {
   try {
-    const res = await axios.get(USERS_URL, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const res = await api.get(USERS_URL);
     return res.data;
   } catch (err) {
     console.error("getUsers error:", err);
-    throw err.response?.data || {
-      error: "Impossible de charger les utilisateurs",
-    };
+    throw err.response?.data || { error: "Impossible de charger les utilisateurs" };
   }
 };
 
@@ -28,69 +22,46 @@ export const getUsers = async (token) => {
 export const createUser = async (userData, photoFile) => {
   try {
     const formData = new FormData();
-
     Object.keys(userData).forEach((key) => {
       if (userData[key] !== undefined && userData[key] !== null && userData[key] !== "") {
         formData.append(key, userData[key]);
       }
     });
+    if (photoFile) formData.append("photo", photoFile);
 
-    if (photoFile) {
-      formData.append("photo", photoFile);
-    }
-
-    const res = await axios.post(USERS_URL, formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
+    const res = await api.post(USERS_URL, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
     });
 
     return res.data;
   } catch (err) {
     console.error("createUser error:", err);
-    throw err.response?.data || {
-      error: "Erreur lors de la création de l'utilisateur",
-    };
+    throw err.response?.data || { error: "Erreur lors de la création de l'utilisateur" };
   }
 };
 
-// ✅ Mettre à jour un utilisateur (ID NUMÉRIQUE OBLIGATOIRE)
+// ✅ Mettre à jour un utilisateur
 export const updateUser = async (id, userData, photoFile) => {
   try {
     const userId = Number(id);
-    if (isNaN(userId)) {
-      throw { message: "ID utilisateur invalide (frontend)" };
-    }
+    if (isNaN(userId)) throw { message: "ID utilisateur invalide (frontend)" };
 
     const formData = new FormData();
-
     Object.keys(userData).forEach((key) => {
-      if (
-        key !== "id" &&
-        userData[key] !== undefined &&
-        userData[key] !== null &&
-        userData[key] !== ""
-      ) {
+      if (key !== "id" && userData[key] !== undefined && userData[key] !== null && userData[key] !== "") {
         formData.append(key, userData[key]);
       }
     });
+    if (photoFile) formData.append("photo", photoFile);
 
-    if (photoFile) {
-      formData.append("photo", photoFile);
-    }
-
-    const res = await axios.put(`${USERS_URL}/${userId}`, formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
+    const res = await api.put(`${USERS_URL}/${userId}`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
     });
 
     return res.data;
   } catch (err) {
     console.error("updateUser error:", err);
-    throw err.response?.data || {
-      error: "Erreur lors de la mise à jour de l'utilisateur",
-    };
+    throw err.response?.data || { error: "Erreur lors de la mise à jour de l'utilisateur" };
   }
 };
 
@@ -98,17 +69,13 @@ export const updateUser = async (id, userData, photoFile) => {
 export const deleteUser = async (id) => {
   try {
     const userId = Number(id);
-    if (isNaN(userId)) {
-      throw { message: "ID utilisateur invalide (frontend)" };
-    }
+    if (isNaN(userId)) throw { message: "ID utilisateur invalide (frontend)" };
 
-    const res = await axios.delete(`${USERS_URL}/${userId}`);
+    const res = await api.delete(`${USERS_URL}/${userId}`);
     return res.data;
   } catch (err) {
     console.error("deleteUser error:", err);
-    throw err.response?.data || {
-      error: "Erreur lors de la suppression de l'utilisateur",
-    };
+    throw err.response?.data || { error: "Erreur lors de la suppression de l'utilisateur" };
   }
 };
 
@@ -116,20 +83,16 @@ export const deleteUser = async (id) => {
 export const resetPassword = async (id, newPassword) => {
   try {
     const userId = Number(id);
-    if (isNaN(userId)) {
-      throw { message: "ID utilisateur invalide (frontend)" };
-    }
+    if (isNaN(userId)) throw { message: "ID utilisateur invalide (frontend)" };
 
-    const res = await axios.put(`${USERS_URL}/${userId}/reset-password`, {
+    const res = await api.put(`${USERS_URL}/${userId}/reset-password`, {
       mot_de_passe: newPassword,
     });
 
     return res.data;
   } catch (err) {
     console.error("resetPassword error:", err);
-    throw err.response?.data || {
-      error: "Erreur lors de la réinitialisation du mot de passe",
-    };
+    throw err.response?.data || { error: "Erreur lors de la réinitialisation du mot de passe" };
   }
 };
 
@@ -138,14 +101,9 @@ export const resetPassword = async (id, newPassword) => {
 =========================== */
 
 // ✅ Récupérer uniquement les médecins
-export const getMedecins = async (token) => {
+export const getMedecins = async () => {
   try {
-    const res = await axios.get(USERS_URL, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
+    const res = await api.get(USERS_URL);
     const data = Array.isArray(res.data) ? res.data : [];
 
     return data.filter((u) => {
@@ -155,8 +113,6 @@ export const getMedecins = async (token) => {
     });
   } catch (err) {
     console.error("getMedecins error:", err);
-    throw err.response?.data || {
-      error: "Impossible de charger les médecins",
-    };
+    throw err.response?.data || { error: "Impossible de charger les médecins" };
   }
 };
