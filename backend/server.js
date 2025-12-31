@@ -1,3 +1,5 @@
+import cors from "cors";
+
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
@@ -10,6 +12,33 @@ const sequelize = require("./config/db");
 const app = express();
 const routes = require("./routes/index");
 const resultatExamenRoutes = require("./routes/resultatExamen.routes"); // ✅ ajout
+
+const allowedOrigins = [
+  "https://carnet-medical-front.onrender.com",
+  "http://localhost:5173",
+  "http://localhost:3000",
+];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Autoriser Postman / Render / serveur
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
+// Important pour Render
+app.options("*", cors());
 
 // 🔧 Middlewares globaux
 app.use(express.json());
