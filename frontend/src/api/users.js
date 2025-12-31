@@ -97,3 +97,29 @@ export const resetPassword = async (id, newPassword) => {
 
   return res.data;
 };
+
+// ===========================
+// MÉDECINS
+// ===========================
+
+// ✅ Récupérer uniquement les médecins
+export const getMedecins = async () => {
+  try {
+    const res = await api.get("/utilisateurs");
+
+    const data = Array.isArray(res.data) ? res.data : [];
+
+    return data.filter((u) => {
+      const role = (u.role || "").toLowerCase();
+      const fonction = (u.fonction || "").toLowerCase();
+      return role === "medecin" || fonction.includes("médecin");
+    });
+  } catch (err) {
+    console.error("getMedecins error:", err);
+    throw (
+      err.response?.data || {
+        error: "Impossible de charger les médecins",
+      }
+    );
+  }
+};
