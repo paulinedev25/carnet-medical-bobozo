@@ -1,5 +1,3 @@
-import cors from "cors";
-
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
@@ -9,9 +7,11 @@ const morgan = require("morgan");
 // Connexion DB
 const sequelize = require("./config/db");
 
-const app = express();
+// Routes
 const routes = require("./routes/index");
-const resultatExamenRoutes = require("./routes/resultatExamen.routes"); // ✅ ajout
+const resultatExamenRoutes = require("./routes/resultatExamen.routes");
+
+const app = express();
 
 const allowedOrigins = [
   "https://carnet-medical-front.onrender.com",
@@ -19,10 +19,10 @@ const allowedOrigins = [
   "http://localhost:3000",
 ];
 
+// 🔐 CORS (UNE SEULE FOIS, BIEN CONFIGURÉ)
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Autoriser Postman / Render / serveur
       if (!origin) return callback(null, true);
 
       if (allowedOrigins.includes(origin)) {
@@ -37,31 +37,30 @@ app.use(
   })
 );
 
-// Important pour Render
-app.options("*", cors());
-
 // 🔧 Middlewares globaux
 app.use(express.json());
-app.use(cors());
 app.use(helmet());
 app.use(morgan("dev"));
 
 // 🌐 Routes principales
 app.use("/api", routes);
+app.use("/api/resultats-examens", resultatExamenRoutes);
 
-// 🔬 Résultats examens
-app.use("/api/resultats-examens", resultatExamenRoutes); // ✅ nouvelle route
+// ✅ Route test Render
+app.get("/", (req, res) =>
+  res.send("Carnet Médical API fonctionne ✅")
+);
 
-// ✅ Test route racine
-app.get("/", (req, res) => res.send("Carnet Médical API fonctionne ✅"));
-
-// ⚠️ Gestion erreurs non gérées (middleware global)
+// ⚠️ Middleware global d’erreurs
 app.use((err, req, res, next) => {
-  console.error("Erreur globale :", err);
-  res.status(500).json({ message: "Erreur serveur", error: err.message });
+  console.error("Erreur globale :", err.message);
+  res.status(500).json({
+    message: "Erreur serveur",
+    error: err.message,
+  });
 });
 
-// 🚀 Lancement du serveur avec connexion DB
+// 🚀 Lancement serveur
 const PORT = process.env.PORT || 5000;
 
 (async () => {
@@ -69,9 +68,9 @@ const PORT = process.env.PORT || 5000;
     await sequelize.authenticate();
     console.log("✅ Base de données connectée");
 
-    app.listen(PORT, () =>
-      console.log(`✅ Serveur démarré sur le port ${PORT}`)
-    );
+    app.listen(PORT, () => {
+      console.log(`✅ Serveur démarré sur le port ${PORT}`);
+    });
   } catch (error) {
     console.error("❌ Erreur DB :", error.message);
     process.exit(1);
