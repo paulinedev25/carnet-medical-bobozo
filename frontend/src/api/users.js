@@ -7,112 +7,66 @@ const USERS_URL = "/utilisateurs";
    UTILISATEURS
 =========================== */
 
-// ✅ Récupérer tous les utilisateurs
 export const getUsers = async () => {
-  try {
-    const res = await api.get(USERS_URL);
-    return res.data;
-  } catch (err) {
-    console.error("getUsers error:", err);
-    throw err.response?.data || { error: "Impossible de charger les utilisateurs" };
-  }
+  const res = await api.get(USERS_URL);
+  return res.data;
 };
 
-// ✅ Créer un utilisateur
 export const createUser = async (userData, photoFile) => {
-  try {
-    const formData = new FormData();
-    Object.keys(userData).forEach((key) => {
-      if (userData[key] !== undefined && userData[key] !== null && userData[key] !== "") {
-        formData.append(key, userData[key]);
-      }
-    });
-    if (photoFile) formData.append("photo", photoFile);
+  const formData = new FormData();
 
-    const res = await api.post(USERS_URL, formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+  Object.entries(userData).forEach(([key, value]) => {
+    if (value) formData.append(key, value);
+  });
 
-    return res.data;
-  } catch (err) {
-    console.error("createUser error:", err);
-    throw err.response?.data || { error: "Erreur lors de la création de l'utilisateur" };
-  }
+  if (photoFile) formData.append("photo", photoFile);
+
+  const res = await api.post(USERS_URL, formData);
+  return res.data;
 };
 
-// ✅ Mettre à jour un utilisateur
 export const updateUser = async (id, userData, photoFile) => {
-  try {
-    const userId = Number(id);
-    if (isNaN(userId)) throw { message: "ID utilisateur invalide (frontend)" };
+  const userId = Number(id);
+  if (isNaN(userId)) throw new Error("ID invalide");
 
-    const formData = new FormData();
-    Object.keys(userData).forEach((key) => {
-      if (key !== "id" && userData[key] !== undefined && userData[key] !== null && userData[key] !== "") {
-        formData.append(key, userData[key]);
-      }
-    });
-    if (photoFile) formData.append("photo", photoFile);
+  const formData = new FormData();
+  Object.entries(userData).forEach(([key, value]) => {
+    if (key !== "id" && value) formData.append(key, value);
+  });
 
-    const res = await api.put(`${USERS_URL}/${userId}`, formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+  if (photoFile) formData.append("photo", photoFile);
 
-    return res.data;
-  } catch (err) {
-    console.error("updateUser error:", err);
-    throw err.response?.data || { error: "Erreur lors de la mise à jour de l'utilisateur" };
-  }
+  const res = await api.put(`${USERS_URL}/${userId}`, formData);
+  return res.data;
 };
 
-// ✅ Supprimer un utilisateur
 export const deleteUser = async (id) => {
-  try {
-    const userId = Number(id);
-    if (isNaN(userId)) throw { message: "ID utilisateur invalide (frontend)" };
+  const userId = Number(id);
+  if (isNaN(userId)) throw new Error("ID invalide");
 
-    const res = await api.delete(`${USERS_URL}/${userId}`);
-    return res.data;
-  } catch (err) {
-    console.error("deleteUser error:", err);
-    throw err.response?.data || { error: "Erreur lors de la suppression de l'utilisateur" };
-  }
+  const res = await api.delete(`${USERS_URL}/${userId}`);
+  return res.data;
 };
 
-// ✅ Réinitialiser le mot de passe
 export const resetPassword = async (id, newPassword) => {
-  try {
-    const userId = Number(id);
-    if (isNaN(userId)) throw { message: "ID utilisateur invalide (frontend)" };
+  const userId = Number(id);
+  if (isNaN(userId)) throw new Error("ID invalide");
 
-    const res = await api.put(`${USERS_URL}/${userId}/reset-password`, {
-      mot_de_passe: newPassword,
-    });
-
-    return res.data;
-  } catch (err) {
-    console.error("resetPassword error:", err);
-    throw err.response?.data || { error: "Erreur lors de la réinitialisation du mot de passe" };
-  }
+  const res = await api.put(`${USERS_URL}/${userId}/reset-password`, {
+    mot_de_passe: newPassword,
+  });
+  return res.data;
 };
 
 /* ===========================
    MÉDECINS
 =========================== */
 
-// ✅ Récupérer uniquement les médecins
 export const getMedecins = async () => {
-  try {
-    const res = await api.get(USERS_URL);
-    const data = Array.isArray(res.data) ? res.data : [];
-
-    return data.filter((u) => {
-      const role = (u.role || "").toLowerCase();
-      const fonction = (u.fonction || "").toLowerCase();
-      return role === "medecin" || fonction.includes("médecin");
-    });
-  } catch (err) {
-    console.error("getMedecins error:", err);
-    throw err.response?.data || { error: "Impossible de charger les médecins" };
-  }
+  const res = await api.get(USERS_URL);
+  return res.data.filter((u) => {
+    const role = (u.role || "").toLowerCase();
+    const fonction = (u.fonction || "").toLowerCase();
+    return role === "medecin" || fonction.includes("médecin");
+  });
 };
