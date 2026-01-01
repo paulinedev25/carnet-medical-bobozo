@@ -19,7 +19,7 @@ class Patient extends Model {
         unite: { type: DataTypes.STRING(100), allowNull: true },
         telephone: { type: DataTypes.STRING(20), allowNull: true },
 
-        date_enregistrement: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
+        date_enregistrement: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.NOW,},
       },
       {
         sequelize,
