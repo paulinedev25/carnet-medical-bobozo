@@ -2,15 +2,14 @@
 import api from "../services/api";
 
 /**
- * 📌 Helper pour logguer les erreurs sans casser l’UI
+ * 📌 Helper erreurs API (sans casser l’UI)
  */
 const handleApiError = (context, error) => {
   const status = error.response?.status;
   const message = error.response?.data?.error || error.message;
 
-  // Ignorer silencieusement le 304
   if (status === 304) {
-    console.debug(`ℹ️ [${context}] 304 Not Modified → données déjà à jour`);
+    console.debug(`ℹ️ [${context}] 304 Not Modified`);
     return { status: 304 };
   }
 
@@ -19,32 +18,42 @@ const handleApiError = (context, error) => {
 };
 
 /**
- * 📋 Récupérer les examens (avec filtres)
+ * 📋 Récupérer les examens (paginés + filtres)
  */
 export const getExamens = async (params = {}) => {
   try {
     console.log("📥 GET /examens →", params);
     const res = await api.get("/examens", { params });
 
-    // Normalisation
+    if (res.data?.rows) {
+      return {
+        rows: res.data.rows,
+        count: res.data.count ?? res.data.rows.length,
+        page: res.data.page,
+        limit: res.data.limit,
+      };
+    }
+
     if (Array.isArray(res.data)) {
       return { rows: res.data, count: res.data.length };
     }
-    if (res.data?.rows) {
-      return { rows: res.data.rows, count: res.data.count ?? res.data.rows.length };
-    }
+
     if (res.data?.data) {
-      return { rows: res.data.data, count: res.data.count ?? res.data.data.length };
+      return {
+        rows: res.data.data,
+        count: res.data.count ?? res.data.data.length,
+      };
     }
 
     return { rows: [], count: 0 };
   } catch (error) {
-    return handleApiError("getExamens", error);
+    handleApiError("getExamens", error);
+    return { rows: [], count: 0 };
   }
 };
 
 /**
- * 🩺 Créer un nouvel examen
+ * 🩺 Prescrire un examen
  */
 export const createExamen = async (payload) => {
   try {
@@ -88,7 +97,7 @@ export const deleteExamen = async (id) => {
 };
 
 /**
- * 🔬 Laborantin : saisir/remplacer les résultats
+ * 🔬 Laborantin : saisir/remplacer résultats
  */
 export const updateResultat = async (id, { parametres }) => {
   try {
@@ -139,7 +148,10 @@ export const downloadExamenPDF = async (id) => {
     const res = await api.get(`/examens/${id}/pdf`, {
       responseType: "blob",
     });
-    return res.data;
+    return {
+      blob: res.data,
+      filename: `examen_${id}.pdf`,
+    };
   } catch (error) {
     return handleApiError("downloadExamenPDF", error);
   }
