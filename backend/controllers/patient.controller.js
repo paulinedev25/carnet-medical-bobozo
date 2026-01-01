@@ -61,10 +61,24 @@ const createPatient = async (req, res) => {
     await patient.save();
 
     res.status(201).json({ message: "Patient créé avec succès ✅", patient });
-  } catch (error) {
-    console.error("❌ Erreur création patient:", error);
-    res.status(500).json({ message: "Erreur serveur", error: error.message });
+  
+    } catch (error) {
+  console.error("❌ Erreur création patient:", error);
+
+  // ✅ Erreurs Sequelize (validation / contraintes)
+  if (error.name === "SequelizeValidationError" || error.name === "SequelizeUniqueConstraintError") {
+    return res.status(400).json({
+      message: "Données patient invalides",
+      errors: error.errors.map(e => e.message),
+    });
   }
+
+  res.status(500).json({
+    message: "Erreur serveur",
+    error: error.message,
+  });
+}
+
 };
 
 // 🌟 Lister tous les patients avec pagination + recherche
