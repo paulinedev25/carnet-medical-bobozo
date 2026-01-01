@@ -24,35 +24,36 @@ export const useConsultations = () => {
   const canChangeStatut = ["admin", "medecin"].includes(role);
 
   const load = async (opts = {}) => {
-    setLoading(true);
-    try {
-      console.log("🔄 Chargement consultations avec filtres:", {
-        page,
-        limit,
-        statut,
-        ...opts,
-      });
+  setLoading(true);
+  try {
+    console.log("🔄 Chargement consultations avec filtres:", {
+      page,
+      limit,
+      statut,
+      ...opts,
+    });
 
-      const { rows, count, page: p, limit: l } = await getConsultations(token, {
-        page,
-        limit,
-        statut,
-        ...opts,
-      });
+    const { rows, count, page: p, limit: l } = await getConsultations({
+      page,
+      limit,
+      statut,
+      ...opts,
+    });
 
-      console.log(`✅ ${rows.length} consultations chargées.`);
-      setRows(rows);
-      setCount(count);
-      setPage(p);
-      setLimit(l);
-    } catch (err) {
-      console.error("❌ Erreur chargement consultations", err);
-      setRows([]);
-      setCount(0);
-    } finally {
-      setLoading(false);
-    }
-  };
+    console.log("📦 Consultations reçues:", rows);
+
+    setRows(Array.isArray(rows) ? rows : []);
+    setCount(Number(count) || 0);
+    setPage(p || page);
+    setLimit(l || limit);
+  } catch (err) {
+    console.error("❌ Erreur chargement consultations", err);
+    setRows([]);
+    setCount(0);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const add = async (payload) => {
     const created = await createConsultation(token, payload);
