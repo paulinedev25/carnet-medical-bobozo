@@ -2,14 +2,14 @@
 import api from "../services/api";
 
 /**
- * 📌 Helper erreurs API (sans casser l’UI)
+ * 📌 Helper pour logguer les erreurs sans casser l’UI
  */
 const handleApiError = (context, error) => {
   const status = error.response?.status;
   const message = error.response?.data?.error || error.message;
 
   if (status === 304) {
-    console.debug(`ℹ️ [${context}] 304 Not Modified`);
+    console.debug(`ℹ️ [${context}] 304 Not Modified → données déjà à jour`);
     return { status: 304 };
   }
 
@@ -18,49 +18,28 @@ const handleApiError = (context, error) => {
 };
 
 /**
- * 📋 Récupérer les examens (paginés + filtres)
+ * 📋 Récupérer les examens (avec filtres)
  */
 export const getExamens = async (params = {}) => {
   try {
-    console.log("📥 GET /examens →", params);
     const res = await api.get("/examens", { params });
-
-    if (res.data?.rows) {
-      return {
-        rows: res.data.rows,
-        count: res.data.count ?? res.data.rows.length,
-        page: res.data.page,
-        limit: res.data.limit,
-      };
-    }
-
-    if (Array.isArray(res.data)) {
-      return { rows: res.data, count: res.data.length };
-    }
-
-    if (res.data?.data) {
-      return {
-        rows: res.data.data,
-        count: res.data.count ?? res.data.data.length,
-      };
-    }
-
+    if (Array.isArray(res.data)) return { rows: res.data, count: res.data.length };
+    if (res.data?.rows) return { rows: res.data.rows, count: res.data.count ?? res.data.rows.length };
+    if (res.data?.data) return { rows: res.data.data, count: res.data.count ?? res.data.data.length };
     return { rows: [], count: 0 };
   } catch (error) {
-    handleApiError("getExamens", error);
-    return { rows: [], count: 0 };
+    return handleApiError("getExamens", error);
   }
 };
 
 /**
- * 🩺 Prescrire un examen
+ * 🩺 Créer un nouvel examen
  */
 export const createExamen = async (payload) => {
   try {
     if (!payload?.consultation_id || !payload?.type_examen) {
       throw new Error("consultation_id et type_examen sont requis");
     }
-    console.log("📤 POST /examens →", payload);
     const res = await api.post("/examens", payload);
     return res.data;
   } catch (error) {
@@ -74,7 +53,6 @@ export const createExamen = async (payload) => {
 export const updateExamen = async (id, payload) => {
   try {
     if (!id) throw new Error("ID examen manquant");
-    console.log(`✏️ PUT /examens/${id} →`, payload);
     const res = await api.put(`/examens/${id}`, payload);
     return res.data;
   } catch (error) {
@@ -88,7 +66,6 @@ export const updateExamen = async (id, payload) => {
 export const deleteExamen = async (id) => {
   try {
     if (!id) throw new Error("ID examen manquant");
-    console.log(`🗑️ DELETE /examens/${id}`);
     const res = await api.delete(`/examens/${id}`);
     return res.data;
   } catch (error) {
@@ -97,12 +74,12 @@ export const deleteExamen = async (id) => {
 };
 
 /**
- * 🔬 Laborantin : saisir/remplacer résultats
+ * 🔬 Laborantin : saisir/remplacer les résultats
  */
 export const updateResultat = async (id, { parametres }) => {
   try {
     if (!id) throw new Error("ID examen manquant");
-    console.log(`📤 POST /examens/${id}/resultats →`, parametres);
+    if (!Array.isArray(parametres)) throw new Error("parametres doit être un tableau");
     const res = await api.post(`/examens/${id}/resultats`, { parametres });
     return res.data;
   } catch (error) {
@@ -116,7 +93,6 @@ export const updateResultat = async (id, { parametres }) => {
 export const updateResultatUnique = async (id, payload) => {
   try {
     if (!id) throw new Error("ID résultat manquant");
-    console.log(`✏️ PUT /examens/resultats/${id} →`, payload);
     const res = await api.put(`/examens/resultats/${id}`, payload);
     return res.data;
   } catch (error) {
@@ -130,7 +106,9 @@ export const updateResultatUnique = async (id, payload) => {
 export const interpretExamen = async (id, observations = "") => {
   try {
     if (!id) throw new Error("ID examen manquant");
-    console.log(`🧾 PUT /examens/${id}/interpreter →`, observations);
+    if (observations && typeof observations !== "string") {
+      throw new Error("observations doit être une chaîne de caractères");
+    }
     const res = await api.put(`/examens/${id}/interpreter`, { observations });
     return res.data;
   } catch (error) {
@@ -144,14 +122,8 @@ export const interpretExamen = async (id, observations = "") => {
 export const downloadExamenPDF = async (id) => {
   try {
     if (!id) throw new Error("ID examen manquant");
-    console.log(`📄 GET /examens/${id}/pdf`);
-    const res = await api.get(`/examens/${id}/pdf`, {
-      responseType: "blob",
-    });
-    return {
-      blob: res.data,
-      filename: `examen_${id}.pdf`,
-    };
+    const res = await api.get(`/examens/${id}/pdf`, { responseType: "blob" });
+    return res.data;
   } catch (error) {
     return handleApiError("downloadExamenPDF", error);
   }
