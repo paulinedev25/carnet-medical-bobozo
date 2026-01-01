@@ -11,8 +11,8 @@ import {
 export const usePatients = () => {
   const { token, user } = useAuth();
 
-  const [rows, setRows] = useState([]);       // patients
-  const [count, setCount] = useState(0);      // total
+  const [rows, setRows] = useState([]);
+  const [count, setCount] = useState(0);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [search, setSearch] = useState("");
@@ -20,48 +20,46 @@ export const usePatients = () => {
 
   const canWrite = ["admin", "receptionniste"].includes((user?.role || "").toLowerCase());
 
+  // 🔄 Chargement des patients
   const load = async (opts = {}) => {
     setLoading(true);
     try {
       const data = await getPatients(token, { page, limit, search, ...opts });
+      console.log("DEBUG data getPatients:", data); // 🔹 Pour vérifier
 
       if (data?.patients) {
-        // ✅ cohérent avec ton contrôleur
         setRows(data.patients);
         setCount(data.total || data.patients.length);
         setPage(data.page || page);
         setLimit(data.limit || limit);
-      } else if (data?.rows) {
-        // cas Sequelize findAndCountAll classique
-        setRows(data.rows);
-        setCount(data.count || 0);
-      } else if (Array.isArray(data)) {
-        // fallback si API renvoie juste un tableau
-        setRows(data);
-        setCount(data.length);
       } else {
         setRows([]);
         setCount(0);
       }
     } catch (err) {
       console.error("Erreur chargement patients", err);
+      setRows([]);
+      setCount(0);
     } finally {
       setLoading(false);
     }
   };
 
+  // 🔹 Création patient
   const add = async (payload) => {
     const created = await createPatient(token, payload);
-    await load();
+    await load(); // recharge la liste
     return created?.patient || created;
   };
 
+  // 🔹 Mise à jour patient
   const edit = async (id, payload) => {
     const updated = await updatePatient(token, id, payload);
     await load();
     return updated?.patient || updated;
   };
 
+  // 🔹 Suppression patient
   const remove = async (id) => {
     await deletePatient(token, id);
     await load();
@@ -73,8 +71,19 @@ export const usePatients = () => {
   }, [page, limit, search]);
 
   return {
-    rows, count, page, limit, search, loading, canWrite,
-    setPage, setLimit, setSearch,
-    add, edit, remove, reload: load,
+    rows,
+    count,
+    page,
+    limit,
+    search,
+    loading,
+    canWrite,
+    setPage,
+    setLimit,
+    setSearch,
+    add,
+    edit,
+    remove,
+    reload: load,
   };
 };
