@@ -1,5 +1,4 @@
-const { Op, ValidationError } = require("sequelize");
-const Patient = require("../models/patient.model");
+const {ValidationError } = require("sequelize");
 
 const {
   Patient,
@@ -190,6 +189,46 @@ const getHistoriquePatient = async (req, res) => {
 };
 
 // 📊 Dashboard patients
+async function computePatientDashboard() {
+  const total = await Patient.count();
+
+  const parSexe = await Patient.findAll({
+    attributes: ["sexe", [Sequelize.fn("COUNT", Sequelize.col("id")), "total"]],
+    group: ["sexe"],
+  });
+
+  const patients = await Patient.findAll({ attributes: ["date_naissance"] });
+  const now = new Date();
+  let tranches = { "<18": 0, "18-35": 0, "36-60": 0, ">60": 0 };
+
+  patients.forEach((p) => {
+    if (!p.date_naissance) return;
+    const age = Math.floor(
+      (now - new Date(p.date_naissance)) / (365.25 * 24 * 60 * 60 * 1000)
+    );
+    if (age < 18) tranches["<18"]++;
+    else if (age <= 35) tranches["18-35"]++;
+    else if (age <= 60) tranches["36-60"]++;
+    else tranches[">60"]++;
+  });
+
+  const parTrancheAge = Object.entries(tranches).map(([tranche, total]) => ({
+    tranche,
+    total,
+  }));
+
+  const parJour = await Patient.findAll({
+    attributes: [
+      [Sequelize.fn("DATE", Sequelize.col("date_enregistrement")), "jour"],
+      [Sequelize.fn("COUNT", Sequelize.col("id")), "total"],
+    ],
+    group: [Sequelize.fn("DATE", Sequelize.col("date_enregistrement"))],
+    order: [[Sequelize.fn("DATE", Sequelize.col("date_enregistrement")), "ASC"]],
+  });
+
+  return { total, parSexe, parTrancheAge, parJour };
+}
+
 const getPatientDashboard = async (req, res) => {
   try {
     const total = await Patient.count();
