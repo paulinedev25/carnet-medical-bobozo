@@ -3,7 +3,7 @@ const { Consultation, Patient, Utilisateur, Prescription, Sequelize } = require(
 // ➕ Créer consultation
 const createConsultation = async (req, res) => {
   try {
-    const utilisateur = req.user; // injecté par middleware JWT
+    const utilisateur = req.user;
     const role = (utilisateur?.role || "").toLowerCase();
 
     let {
@@ -28,12 +28,8 @@ const createConsultation = async (req, res) => {
       etat_patient,
     } = req.body;
 
-    // 🔒 Si médecin → forcer medecin_id = utilisateur courant
-    if (role === "medecin") {
-      medecin_id = utilisateur.id;
-    }
+    if (role === "medecin") medecin_id = utilisateur.id;
 
-    // 🔒 Si réceptionniste ou admin non-médecin → diagnostic & traitement interdits
     const fonction = (utilisateur?.fonction || "").toLowerCase();
     const isMedecinLike = role === "medecin" || fonction.includes("médecin");
     if (!isMedecinLike) {
@@ -77,14 +73,16 @@ const createConsultation = async (req, res) => {
   }
 };
 
-// 📋 Liste consultations avec prescriptions
+// 📋 Liste consultations paginée
 const getAllConsultations = async (req, res) => {
   try {
-    const { statut } = req.query;
+    const { statut, page = 1, limit = 10 } = req.query;
     const whereClause = {};
     if (statut) whereClause.statut = statut;
 
-    const consultations = await Consultation.findAll({
+    const offset = (page - 1) * limit;
+
+    const { rows, count } = await Consultation.findAndCountAll({
       where: whereClause,
       include: [
         { model: Patient, as: "patient", attributes: ["id", "nom", "prenom", "postnom"] },
@@ -92,9 +90,16 @@ const getAllConsultations = async (req, res) => {
         { model: Prescription, as: "prescriptions" },
       ],
       order: [["date_consultation", "DESC"]],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
     });
 
-    res.json(consultations);
+    res.json({
+      rows,
+      count,
+      page: parseInt(page),
+      limit: parseInt(limit),
+    });
   } catch (error) {
     console.error("❌ Erreur chargement consultations:", error);
     res.status(500).json({ message: "Erreur serveur", error: error.message });
@@ -134,17 +139,11 @@ const updateConsultation = async (req, res) => {
 
     let payload = { ...req.body };
 
-    // 🔒 Si consultation clôturée → plus de modification possible
     if (consultation.statut === "cloturee") {
       return res.status(403).json({ error: "Impossible de modifier une consultation clôturée" });
     }
 
-    // 🔒 Empêcher médecin de changer medecin_id
-    if (role === "medecin") {
-      payload.medecin_id = consultation.medecin_id;
-    }
-
-    // 🔒 Empêcher réceptionniste ou admin non-médecin de modifier diagnostic/traitement
+    if (role === "medecin") payload.medecin_id = consultation.medecin_id;
     if (!isMedecinLike) {
       payload.diagnostic = consultation.diagnostic;
       payload.traitement = consultation.traitement;
@@ -182,12 +181,10 @@ const changerStatutConsultation = async (req, res) => {
     const consultation = await Consultation.findByPk(id);
     if (!consultation) return res.status(404).json({ error: "Consultation non trouvée" });
 
-    // 🔒 Médecin → ne peut changer que ses propres consultations
     if (role === "medecin" && consultation.medecin_id !== utilisateur.id) {
       return res.status(403).json({ error: "Vous ne pouvez changer le statut que de vos propres consultations" });
     }
 
-    // 🔒 Consultation clôturée → seul l’admin peut modifier
     if (consultation.statut === "cloturee" && role !== "admin") {
       return res.status(403).json({ error: "Impossible de modifier une consultation clôturée" });
     }
