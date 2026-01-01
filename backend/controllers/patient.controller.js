@@ -1,3 +1,6 @@
+const { Op, ValidationError } = require("sequelize");
+const Patient = require("../models/patient.model");
+
 const {
   Patient,
   Consultation,
@@ -24,8 +27,6 @@ function generateNumeroDossier(patient) {
 }
 
 // 🌟 Créer un patient
-const { Op, ValidationError } = require("sequelize");
-const Patient = require("../models/patient.model");
 
 const createPatient = async (req, res) => {
   try {
