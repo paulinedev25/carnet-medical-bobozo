@@ -24,61 +24,43 @@ function generateNumeroDossier(patient) {
 }
 
 // 🌟 Créer un patient
+const { Sequelize } = require("sequelize");
+
 const createPatient = async (req, res) => {
   try {
-    const {
-      nom,
-      postnom,
-      prenom,
-      sexe,
-      date_naissance,
-      adresse,
-      fonction,
-      grade,
-      matricule,
-      unite,
-      telephone,
-    } = req.body;
+    // 🔎 DEBUG TEMPORAIRE (à garder en prod si besoin)
+    console.log("📥 Données reçues createPatient:", req.body);
 
-    // Étape 1 : créer patient sans numero_dossier
-    let patient = await Patient.create({
-      nom,
-      postnom,
-      prenom,
-      sexe,
-      date_naissance,
-      adresse,
-      fonction,
-      grade,
-      matricule,
-      unite,
-      telephone,
-    });
+    const patient = await Patient.create(req.body);
 
-    // Étape 2 : générer numero_dossier
-    const numero_dossier = generateNumeroDossier(patient);
-    patient.numero_dossier = numero_dossier;
+    // Génération numéro dossier
+    patient.numero_dossier = generateNumeroDossier(patient);
     await patient.save();
 
-    res.status(201).json({ message: "Patient créé avec succès ✅", patient });
-  
-    } catch (error) {
-  console.error("❌ Erreur création patient:", error);
+    return res.status(201).json({
+      message: "Patient créé avec succès ✅",
+      patient,
+    });
+  } catch (error) {
+    console.error("❌ Erreur Sequelize createPatient:", error);
 
-  // ✅ Erreurs Sequelize (validation / contraintes)
-  if (error.name === "SequelizeValidationError" || error.name === "SequelizeUniqueConstraintError") {
-    return res.status(400).json({
-      message: "Données patient invalides",
-      errors: error.errors.map(e => e.message),
+    // ✅ ERREURS DE VALIDATION (LE POINT CRUCIAL)
+    if (error instanceof Sequelize.ValidationError) {
+      return res.status(400).json({
+        message: "Erreur de validation des données",
+        errors: error.errors.map((e) => ({
+          champ: e.path,
+          message: e.message,
+        })),
+      });
+    }
+
+    // ❌ AUTRES ERREURS
+    return res.status(500).json({
+      message: "Erreur serveur lors de la création du patient",
+      error: error.message,
     });
   }
-
-  res.status(500).json({
-    message: "Erreur serveur",
-    error: error.message,
-  });
-}
-
 };
 
 // 🌟 Lister tous les patients avec pagination + recherche
