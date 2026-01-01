@@ -29,34 +29,23 @@ function generateNumeroDossier(patient) {
 
 const createPatient = async (req, res) => {
   try {
-    // 🔎 DEBUG TEMPORAIRE (à garder en prod si besoin)
     console.log("📥 Données reçues createPatient:", req.body);
 
-    const patient = await Patient.create(req.body);
+    // Crée le patient SANS numero_dossier d'abord
+    const patient = await Patient.create(req.body, { fields: Object.keys(req.body) });
 
-    // Génération numéro dossier
+    // Génère et sauvegarde numero_dossier
     patient.numero_dossier = generateNumeroDossier(patient);
-    await patient.save();
+    await patient.save({ fields: ["numero_dossier"] });
+
+    console.log("✅ Patient enregistré :", patient.toJSON());
 
     return res.status(201).json({
       message: "Patient créé avec succès ✅",
       patient,
     });
   } catch (error) {
-    console.error("❌ Erreur Sequelize createPatient:", error);
-
-    // ✅ ERREURS DE VALIDATION (LE POINT CRUCIAL)
-    if (error instanceof Sequelize.ValidationError) {
-      return res.status(400).json({
-        message: "Erreur de validation des données",
-        errors: error.errors.map((e) => ({
-          champ: e.path,
-          message: e.message,
-        })),
-      });
-    }
-
-    // ❌ AUTRES ERREURS
+    console.error("❌ Erreur createPatient :", error);
     return res.status(500).json({
       message: "Erreur serveur lors de la création du patient",
       error: error.message,
