@@ -8,7 +8,7 @@ import {
 } from "../api/consultations";
 
 export const useConsultations = () => {
-  const { token, user } = useAuth();
+  const { user } = useAuth(); // ⛔ token supprimé (géré par Axios)
 
   const [rows, setRows] = useState([]);
   const [count, setCount] = useState(0);
@@ -17,58 +17,62 @@ export const useConsultations = () => {
   const [statut, setStatut] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // Droits selon rôle
+  // 🔐 Droits selon rôle
   const role = (user?.role || "").toLowerCase();
   const canCreate = ["admin", "receptionniste"].includes(role);
   const canEdit = ["admin", "medecin", "receptionniste"].includes(role);
   const canChangeStatut = ["admin", "medecin"].includes(role);
 
+  // 📋 Chargement des consultations
   const load = async (opts = {}) => {
-  setLoading(true);
-  try {
-    console.log("🔄 Chargement consultations avec filtres:", {
-      page,
-      limit,
-      statut,
-      ...opts,
-    });
+    setLoading(true);
+    try {
+      console.log("🔄 Chargement consultations avec filtres:", {
+        page,
+        limit,
+        statut,
+        ...opts,
+      });
 
-    const { rows, count, page: p, limit: l } = await getConsultations({
-      page,
-      limit,
-      statut,
-      ...opts,
-    });
+      const { rows, count, page: p, limit: l } = await getConsultations({
+        page,
+        limit,
+        statut,
+        ...opts,
+      });
 
-    console.log("📦 Consultations reçues:", rows);
+      console.log("📦 Consultations reçues:", rows);
 
-    setRows(Array.isArray(rows) ? rows : []);
-    setCount(Number(count) || 0);
-    setPage(p || page);
-    setLimit(l || limit);
-  } catch (err) {
-    console.error("❌ Erreur chargement consultations", err);
-    setRows([]);
-    setCount(0);
-  } finally {
-    setLoading(false);
-  }
-};
+      setRows(Array.isArray(rows) ? rows : []);
+      setCount(Number(count) || 0);
+      setPage(p || page);
+      setLimit(l || limit);
+    } catch (err) {
+      console.error("❌ Erreur chargement consultations", err);
+      setRows([]);
+      setCount(0);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  // ➕ Créer consultation
   const add = async (payload) => {
-    const created = await createConsultation(token, payload);
-    await load(); // 🔄 recharge automatiquement la liste après création
+    const created = await createConsultation(payload);
+    await load(); // 🔄 recharge après création
     return created?.consultation || created;
   };
 
+  // ✏️ Modifier consultation
   const edit = async (id, payload) => {
-    const updated = await updateConsultation(token, id, payload);
+    const updated = await updateConsultation(id, payload);
     await load();
     return updated?.consultation || updated;
   };
 
+  // 🔄 Changer statut
   const changeStatut = async (id, newStatut) => {
-    await updateConsultationStatut(token, id, newStatut);
+    await updateConsultationStatut(id, newStatut);
     await load();
   };
 
