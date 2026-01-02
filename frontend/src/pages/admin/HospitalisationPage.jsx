@@ -8,11 +8,12 @@ import {
   createHospitalisation,
   updateHospitalisation,
   deleteHospitalisation,
+  getHospitalisationDashboard,
+  changerStatutHospitalisation,
 } from "../../api/hospitalisations";
 
 import HospitalisationModal from "../../components/hospitalisations/HospitalisationModal";
 import HospitalisationDetailsModal from "../../components/hospitalisations/HospitalisationDetailsModal";
-import { getHospitalisationDashboard, changerStatutHospitalisation } from "../../api/hospitalisations";
 
 export default function HospitalisationPage() {
   const { token, user } = useAuth();
@@ -34,13 +35,13 @@ export default function HospitalisationPage() {
 
   const [dashboard, setDashboard] = useState(null);
 
-  // Charger hospitalisations
+  // 🔄 Charger hospitalisations
   const loadData = useCallback(async () => {
     if (!token) return;
     setLoading(true);
     try {
       const res = await getHospitalisations({ statut, page, limit: rowsPerPage });
-      const items = Array.isArray(res) ? res : res.rows ?? [];
+      const items = res.rows ?? [];
       setRows(items);
       console.debug("Hospitalisations chargées:", items);
     } catch (err) {
@@ -52,26 +53,28 @@ export default function HospitalisationPage() {
     }
   }, [token, statut, page]);
 
-  // Charger dashboard
+  // 🔄 Charger dashboard
   const loadDashboard = useCallback(async () => {
-  if (!token) return;
-  try {
-    const data = await getHospitalisationDashboard(token);
-    setDashboard(data);
-  } catch (err) {
-    console.error("Erreur dashboard:", err);
-  }
-}, [token]);
+    if (!token) return;
+    try {
+      const data = await getHospitalisationDashboard();
+      setDashboard(data);
+    } catch (err) {
+      console.error("Erreur dashboard:", err);
+      toast.error("Impossible de charger le dashboard ❌");
+    }
+  }, [token]);
 
   useEffect(() => { loadData(); }, [loadData]);
   useEffect(() => { loadDashboard(); }, [loadDashboard]);
 
+  // Colonnes tableau
   const columns = useMemo(
     () => ["#", "Patient", "Médecin", "Infirmier", "Date entrée", "Statut", "Actions"],
     []
   );
 
-  // Filtrage
+  // 🔍 Filtrage
   const filteredRows = rows.filter((h) => {
     const searchLower = (search || "").toLowerCase();
     const matchesSearch =
@@ -84,14 +87,14 @@ export default function HospitalisationPage() {
     return matchesSearch && matchesStatut;
   });
 
-  // Pagination
+  // 📄 Pagination
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / rowsPerPage));
   const paginatedRows = useMemo(() => {
     const start = (page - 1) * rowsPerPage;
     return filteredRows.slice(start, start + rowsPerPage);
   }, [filteredRows, page]);
 
-  // Formatage date
+  // 📅 Formatage date
   const formatDate = (d) => {
     if (!d) return "-";
     try {
@@ -102,7 +105,7 @@ export default function HospitalisationPage() {
     } catch { return d; }
   };
 
-  // Label statut
+  // 🏷️ Label statut
   const labelStatut = (s) => {
     if (!s) return "-";
     switch (s) {
@@ -113,21 +116,21 @@ export default function HospitalisationPage() {
     }
   };
 
-  // Changer statut directement
+  // 🔄 Changer statut directement
   const handleChangerStatut = async (h) => {
-  const nextStatut = h.statut === "admise" ? "en_cours" : h.statut === "en_cours" ? "cloturee" : "admise";
-  try {
-    await changerStatutHospitalisation(h.id, { statut: nextStatut }, token);
-    toast.success(`Statut changé en ${labelStatut(nextStatut)}`);
-    await loadData();
-    await loadDashboard();
-  } catch (err) {
-    console.error("Erreur changement statut:", err);
-    toast.error("❌ Échec changement statut");
-  }
-};
+    const nextStatut = h.statut === "admise" ? "en_cours" : h.statut === "en_cours" ? "cloturee" : "admise";
+    try {
+      await changerStatutHospitalisation(h.id, { statut: nextStatut });
+      toast.success(`Statut changé en ${labelStatut(nextStatut)}`);
+      await loadData();
+      await loadDashboard();
+    } catch (err) {
+      console.error("Erreur changement statut:", err);
+      toast.error("❌ Échec changement statut");
+    }
+  };
 
-  // CRUD
+  // 💾 CRUD
   const handleSave = async (payload) => {
     setSaving(true);
     try {
@@ -215,10 +218,11 @@ export default function HospitalisationPage() {
                 <td className="px-4 py-2">{h.infirmier?.noms || "-"}</td>
                 <td className="px-4 py-2">{formatDate(h.date_entree)}</td>
                 <td className="px-4 py-2">
-                  <span className={`px-2 py-1 rounded text-xs font-semibold cursor-pointer
-                    ${h.statut === "admise" ? "bg-blue-100 text-blue-700"
-                      : h.statut === "en_cours" ? "bg-yellow-100 text-yellow-700"
-                      : "bg-green-100 text-green-700"}`}
+                  <span
+                    className={`px-2 py-1 rounded text-xs font-semibold cursor-pointer
+                      ${h.statut === "admise" ? "bg-blue-100 text-blue-700"
+                        : h.statut === "en_cours" ? "bg-yellow-100 text-yellow-700"
+                        : "bg-green-100 text-green-700"}`}
                     onClick={() => handleChangerStatut(h)}
                   >
                     {labelStatut(h.statut)}
@@ -250,8 +254,17 @@ export default function HospitalisationPage() {
       )}
 
       {/* Modales */}
-      <HospitalisationModal open={openModal} onClose={() => { setOpenModal(false); setHospitalisationToEdit(null); }} onSave={handleSave} hospitalisation={hospitalisationToEdit} />
-      <HospitalisationDetailsModal open={openDetails} onClose={() => { setOpenDetails(false); setSelected(null); }} hospitalisation={selected} />
+      <HospitalisationModal
+        open={openModal}
+        onClose={() => { setOpenModal(false); setHospitalisationToEdit(null); }}
+        onSave={handleSave}
+        hospitalisation={hospitalisationToEdit}
+      />
+      <HospitalisationDetailsModal
+        open={openDetails}
+        onClose={() => { setOpenDetails(false); setSelected(null); }}
+        hospitalisation={selected}
+      />
     </div>
   );
 }

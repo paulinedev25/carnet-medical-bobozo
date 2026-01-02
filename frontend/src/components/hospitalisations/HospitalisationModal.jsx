@@ -38,7 +38,7 @@ export default function HospitalisationModal({ open, onClose, onSave, hospitalis
     })();
   }, [token, open]);
 
-  // Pré-remplissage si hospitalisation en édition
+  // Pré-remplissage si édition
   useEffect(() => {
     if (hospitalisation) {
       setPatientId(hospitalisation.patient_id || "");
@@ -226,7 +226,7 @@ export default function HospitalisationModal({ open, onClose, onSave, hospitalis
             >
               <option value="admise">Admise</option>
               <option value="en_cours">En cours</option>
-              <option value="clôturée">Clôturée</option>
+              <option value="cloturee">Clôturée</option>
             </select>
           </div>
         </div>
