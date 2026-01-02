@@ -11,10 +11,11 @@ import {
   updateMedicament,
   deleteMedicament,
 } from "../../api/medicaments";
-import { createApprovisionnement } from "../../api/approvisionnements";
+import { createApprovisionnement, getHistoriqueApprovisionnement } from "../../api/approvisionnements";
 
 import MedicamentModal from "../../components/medicaments/MedicamentModal";
 import ApprovisionnementModal from "../../components/medicaments/ApprovisionnementModal";
+import ApprovisionnementHistoriqueModal from "../../components/medicaments/ApprovisionnementHistoriqueModal";
 
 export default function MedicamentsPage() {
   const { token } = useAuth();
@@ -35,7 +36,9 @@ export default function MedicamentsPage() {
 
   const [openMedicamentModal, setOpenMedicamentModal] = useState(false);
   const [openApproModal, setOpenApproModal] = useState(false);
+  const [openHistoriqueModal, setOpenHistoriqueModal] = useState(false);
   const [selected, setSelected] = useState(null);
+  const [historique, setHistorique] = useState([]);
 
   // --- UTILITY ---
   const displayWithUnit = (value, unit) => `${value ?? "-"} ${unit || ""}`.trim();
@@ -80,11 +83,9 @@ export default function MedicamentsPage() {
     arr.sort((a, b) => {
       const aVal = a[sortBy];
       const bVal = b[sortBy];
-
       if (typeof aVal === "number" && typeof bVal === "number") {
         return sortOrder === "asc" ? aVal - bVal : bVal - aVal;
       }
-
       const sa = String(aVal ?? "").toLowerCase();
       const sb = String(bVal ?? "").toLowerCase();
       if (sa < sb) return sortOrder === "asc" ? -1 : 1;
@@ -159,6 +160,7 @@ export default function MedicamentsPage() {
     } finally { setSaving(false); }
   };
 
+  // --- APPROVISIONNEMENT ---
   const handleApprovisionnement = async (payload) => {
     if (!selected?.id) { toast.error("⚠️ Aucun médicament sélectionné."); return; }
     setSaving(true);
@@ -174,7 +176,21 @@ export default function MedicamentsPage() {
     } finally { setSaving(false); }
   };
 
-  // --- EXPORTS ---
+  // --- HISTORIQUE ---
+  const handleOpenHistorique = async (medicament) => {
+    setSelected(medicament);
+    setOpenHistoriqueModal(true);
+    try {
+      const data = await getHistoriqueApprovisionnement(token, medicament.id);
+      setHistorique(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Erreur chargement historique :", err?.response?.data || err);
+      toast.error("❌ Impossible de charger l'historique");
+      setHistorique([]);
+    }
+  };
+
+  // --- EXPORT ---
   const handleExportPDF = () => {
     try {
       const doc = new jsPDF();
@@ -242,7 +258,6 @@ export default function MedicamentsPage() {
       {/* HEADER */}
       <div className="flex flex-wrap justify-between mb-4 gap-2 items-center">
         <h1 className="text-xl font-semibold">💊 Médicaments</h1>
-
         <div className="flex flex-wrap gap-2 items-center">
           <input
             value={search}
@@ -250,7 +265,6 @@ export default function MedicamentsPage() {
             placeholder="🔍 Rechercher un médicament..."
             className="border rounded px-3 py-2"
           />
-
           <label className="flex items-center gap-2 text-sm">
             <input
               type="checkbox"
@@ -259,7 +273,6 @@ export default function MedicamentsPage() {
             />
             Stock faible (&lt; {lowStockThreshold})
           </label>
-
           <button
             onClick={() => { setSelected(null); setOpenMedicamentModal(true); }}
             disabled={saving}
@@ -267,7 +280,6 @@ export default function MedicamentsPage() {
           >
             + Nouveau
           </button>
-
           <button
             onClick={handleExportPDF}
             disabled={!sortedRows.length}
@@ -275,7 +287,6 @@ export default function MedicamentsPage() {
           >
             📄 PDF
           </button>
-
           <button
             onClick={handleExportCSV}
             disabled={!sortedRows.length}
@@ -306,15 +317,12 @@ export default function MedicamentsPage() {
                     onClick={() => toggleSort(col.key)}
                   >
                     {col.label}
-                    {sortBy === col.key && (
-                      <span> {sortOrder === "asc" ? "🔼" : "🔽"}</span>
-                    )}
+                    {sortBy === col.key && <span> {sortOrder === "asc" ? "🔼" : "🔽"}</span>}
                   </th>
                 ))}
                 <th className="px-4 py-2 text-left">Actions</th>
               </tr>
             </thead>
-
             <tbody>
               {paginatedRows.map((m, idx) => (
                 <tr key={m.id} className="border-t hover:bg-gray-50">
@@ -322,9 +330,7 @@ export default function MedicamentsPage() {
                   <td className="px-4 py-2 font-medium">{displayWithUnit(m.nom_commercial, m.unite_nom_commercial)}</td>
                   <td className="px-4 py-2">{displayWithUnit(m.nom_dci, m.unite_nom_dci)}</td>
                   <td className="px-4 py-2">{displayWithUnit(m.forme, m.unite_forme)}</td>
-                  <td
-                    className={`px-4 py-2 ${Number(m.quantite_disponible ?? 0) < lowStockThreshold ? "text-red-600 font-bold" : ""}`}
-                  >
+                  <td className={`px-4 py-2 ${Number(m.quantite_disponible ?? 0) < lowStockThreshold ? "text-red-600 font-bold" : ""}`}>
                     {displayWithUnit(m.quantite_disponible, m.unite_quantite)}
                   </td>
                   <td>{displayWithUnit(m.seuil_alerte, m.unite_seuil)}</td>
@@ -342,6 +348,12 @@ export default function MedicamentsPage() {
                     >✏️</button>
 
                     <button
+                      onClick={() => handleOpenHistorique(m)}
+                      className="px-2 py-1 rounded border hover:bg-blue-100"
+                      title="Historique"
+                    >📊</button>
+
+                    <button
                       onClick={() => handleDelete(m.id)}
                       className="px-2 py-1 rounded border hover:bg-red-100"
                       title="Supprimer"
@@ -349,7 +361,6 @@ export default function MedicamentsPage() {
                   </td>
                 </tr>
               ))}
-
               {!loading && paginatedRows.length === 0 && (
                 <tr>
                   <td colSpan={columns.length + 1} className="text-center py-6 text-gray-500">
@@ -370,9 +381,7 @@ export default function MedicamentsPage() {
             disabled={page === 1}
             className="px-3 py-1 rounded border bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
           >⬅️ Précédent</button>
-
           <span>Page {page} / {totalPages}</span>
-
           <button
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page === totalPages}
@@ -394,6 +403,13 @@ export default function MedicamentsPage() {
         onClose={() => { setOpenApproModal(false); setSelected(null); }}
         onSave={handleApprovisionnement}
         medicament={selected}
+      />
+
+      <ApprovisionnementHistoriqueModal
+        open={openHistoriqueModal}
+        onClose={() => { setOpenHistoriqueModal(false); setSelected(null); setHistorique([]); }}
+        medicament={selected}
+        historique={historique}
       />
     </div>
   );

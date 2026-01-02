@@ -15,10 +15,12 @@ function majStatutDisponibilite(medicament) {
 }
 
 /**
- * ➕ Ajouter un médicament
+ * ➕ Ajouter un médicament (robuste)
  */
 exports.createMedicament = async (req, res) => {
   try {
+    console.log("POST /medicaments payload:", req.body);
+
     const {
       nom_commercial,
       unite_nom_commercial,
@@ -41,6 +43,10 @@ exports.createMedicament = async (req, res) => {
       return res.status(400).json({ error: "⚠️ Le nom commercial est obligatoire." });
     }
 
+    const quantite = Number(quantite_disponible);
+    const seuil = Number(seuil_alerte);
+    const dateExp = date_expiration ? new Date(date_expiration) : null;
+
     const medicament = await Medicament.create({
       nom_commercial: nom_commercial.trim(),
       unite_nom_commercial: unite_nom_commercial?.trim() || null,
@@ -50,13 +56,13 @@ exports.createMedicament = async (req, res) => {
       unite_forme: unite_forme?.trim() || null,
       dosage: dosage?.trim() || null,
       voie_administration: voie_administration?.trim() || null,
-      quantite_disponible: quantite_disponible ?? 0,
+      quantite_disponible: isNaN(quantite) ? 0 : quantite,
       unite_quantite: unite_quantite?.trim() || null,
-      seuil_alerte: seuil_alerte ?? 10,
+      seuil_alerte: isNaN(seuil) ? 10 : seuil,
       unite_seuil: unite_seuil?.trim() || null,
-      date_expiration: date_expiration ?? null,
+      date_expiration: dateExp,
       fournisseur: fournisseur?.trim() || null,
-      observations: observations ?? null,
+      observations: observations?.trim() || null,
     });
 
     majStatutDisponibilite(medicament);
@@ -100,7 +106,7 @@ exports.getMedicamentById = async (req, res) => {
 };
 
 /**
- * ✏️ Mettre à jour un médicament
+ * ✏️ Mettre à jour un médicament (robuste)
  */
 exports.updateMedicament = async (req, res) => {
   try {
@@ -129,22 +135,26 @@ exports.updateMedicament = async (req, res) => {
       return res.status(400).json({ error: "⚠️ Le nom commercial ne peut pas être vide." });
     }
 
+    const quantite = Number(quantite_disponible);
+    const seuil = Number(seuil_alerte);
+    const dateExp = date_expiration ? new Date(date_expiration) : medicament.date_expiration;
+
     await medicament.update({
-      nom_commercial: nom_commercial ?? medicament.nom_commercial,
-      unite_nom_commercial: unite_nom_commercial ?? medicament.unite_nom_commercial,
-      nom_dci: nom_dci ?? medicament.nom_dci,
-      unite_nom_dci: unite_nom_dci ?? medicament.unite_nom_dci,
-      forme: forme ?? medicament.forme,
-      unite_forme: unite_forme ?? medicament.unite_forme,
-      dosage: dosage ?? medicament.dosage,
-      voie_administration: voie_administration ?? medicament.voie_administration,
-      quantite_disponible: quantite_disponible ?? medicament.quantite_disponible,
-      unite_quantite: unite_quantite ?? medicament.unite_quantite,
-      seuil_alerte: seuil_alerte ?? medicament.seuil_alerte,
-      unite_seuil: unite_seuil ?? medicament.unite_seuil,
-      date_expiration: date_expiration ?? medicament.date_expiration,
-      fournisseur: fournisseur ?? medicament.fournisseur,
-      observations: observations ?? medicament.observations,
+      nom_commercial: nom_commercial?.trim() || medicament.nom_commercial,
+      unite_nom_commercial: unite_nom_commercial?.trim() || medicament.unite_nom_commercial,
+      nom_dci: nom_dci?.trim() || medicament.nom_dci,
+      unite_nom_dci: unite_nom_dci?.trim() || medicament.unite_nom_dci,
+      forme: forme?.trim() || medicament.forme,
+      unite_forme: unite_forme?.trim() || medicament.unite_forme,
+      dosage: dosage?.trim() || medicament.dosage,
+      voie_administration: voie_administration?.trim() || medicament.voie_administration,
+      quantite_disponible: isNaN(quantite) ? medicament.quantite_disponible : quantite,
+      unite_quantite: unite_quantite?.trim() || medicament.unite_quantite,
+      seuil_alerte: isNaN(seuil) ? medicament.seuil_alerte : seuil,
+      unite_seuil: unite_seuil?.trim() || medicament.unite_seuil,
+      date_expiration: dateExp,
+      fournisseur: fournisseur?.trim() || medicament.fournisseur,
+      observations: observations?.trim() || medicament.observations,
     });
 
     majStatutDisponibilite(medicament);
@@ -194,13 +204,13 @@ exports.alertesStock = async (req, res) => {
  */
 exports.reapprovisionnerMedicament = async (req, res) => {
   try {
-    const { quantite } = req.body;
+    const quantite = Number(req.body.quantite);
     if (!quantite || quantite <= 0) return res.status(400).json({ error: "⚠️ Quantité invalide." });
 
     const medicament = await Medicament.findByPk(req.params.id);
     if (!medicament) return res.status(404).json({ error: "Médicament non trouvé ❌" });
 
-    medicament.quantite_disponible += parseInt(quantite, 10);
+    medicament.quantite_disponible += quantite;
     majStatutDisponibilite(medicament);
     await medicament.save();
 

@@ -1,28 +1,46 @@
 import { useEffect, useState } from "react";
+import { toast } from "react-toastify";
 
 export default function ApprovisionnementModal({ open, onClose, onSave, medicament }) {
-  const [quantite, setQuantite] = useState("");
-  const [fournisseur, setFournisseur] = useState("");
-  const [dateAppro, setDateAppro] = useState("");
+  const initialState = {
+    quantite: "",
+    fournisseur: "",
+    date_approvisionnement: new Date().toISOString().split("T")[0],
+  };
+
+  const [form, setForm] = useState(initialState);
 
   useEffect(() => {
     if (open) {
-      setQuantite("");
-      setFournisseur("");
-      setDateAppro(new Date().toISOString().split("T")[0]);
+      setForm(initialState);
     }
   }, [open]);
 
+  const handleChange = (e) => {
+    const { name, value, type } = e.target;
+    setForm((f) => ({
+      ...f,
+      [name]: type === "number" ? Number(value) : value,
+    }));
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!quantite || quantite <= 0) {
-      alert("⚠️ La quantité doit être > 0");
+
+    if (!form.quantite || Number(form.quantite) <= 0) {
+      toast.error("⚠️ La quantité doit être supérieure à 0");
       return;
     }
+
+    if (form.date_approvisionnement && isNaN(new Date(form.date_approvisionnement).getTime())) {
+      toast.error("⚠️ La date d'approvisionnement est invalide");
+      return;
+    }
+
     onSave({
-      quantite: Number(quantite),
-      fournisseur: fournisseur.trim() || null,
-      date_approvisionnement: dateAppro,
+      quantite: Number(form.quantite),
+      fournisseur: form.fournisseur.trim() || null,
+      date_approvisionnement: form.date_approvisionnement,
     });
   };
 
@@ -31,15 +49,18 @@ export default function ApprovisionnementModal({ open, onClose, onSave, medicame
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
-        <h2 className="text-lg font-semibold mb-4">📦 Approvisionner {medicament.nom}</h2>
+        <h2 className="text-lg font-semibold mb-4">
+          📦 Approvisionner {medicament.nom_commercial || medicament.nom}
+        </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium">Quantité</label>
+            <label className="block text-sm font-medium">Quantité *</label>
             <input
               type="number"
-              value={quantite}
-              onChange={(e) => setQuantite(e.target.value)}
+              name="quantite"
+              value={form.quantite}
+              onChange={handleChange}
               className="w-full border rounded px-3 py-2 mt-1"
               min="1"
               required
@@ -50,8 +71,9 @@ export default function ApprovisionnementModal({ open, onClose, onSave, medicame
             <label className="block text-sm font-medium">Fournisseur</label>
             <input
               type="text"
-              value={fournisseur}
-              onChange={(e) => setFournisseur(e.target.value)}
+              name="fournisseur"
+              value={form.fournisseur}
+              onChange={handleChange}
               className="w-full border rounded px-3 py-2 mt-1"
               placeholder="Ex: Pharma Express"
             />
@@ -61,9 +83,11 @@ export default function ApprovisionnementModal({ open, onClose, onSave, medicame
             <label className="block text-sm font-medium">Date d'approvisionnement</label>
             <input
               type="date"
-              value={dateAppro}
-              onChange={(e) => setDateAppro(e.target.value)}
+              name="date_approvisionnement"
+              value={form.date_approvisionnement}
+              onChange={handleChange}
               className="w-full border rounded px-3 py-2 mt-1"
+              required
             />
           </div>
 
