@@ -1,18 +1,26 @@
 // src/api/approvisionnements.js
 import api from "../services/api";
 
-// Crée un approvisionnement pour un médicament
-export const createApprovisionnement = async (token, payload) => {
-  const response = await api.post("/approvisionnements", payload, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+/**
+ * ➕ Créer un approvisionnement pour un médicament
+ */
+export const createApprovisionnement = async (payload) => {
+  if (!payload?.medicament_id) {
+    throw new Error("ID médicament manquant pour l'approvisionnement");
+  }
+
+  const response = await api.post("/approvisionnements", payload);
   return response.data;
 };
 
-// Récupère l'historique des approvisionnements d'un médicament
-export const getHistoriqueApprovisionnement = async (token, medicamentId) => {
-  const response = await api.get(`/approvisionnements/${medicamentId}/historique`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+/**
+ * 📊 Récupérer l'historique des approvisionnements d'un médicament
+ */
+export const getHistoriqueApprovisionnement = async (medicamentId) => {
+  if (!medicamentId) {
+    throw new Error("ID médicament manquant pour l'historique");
+  }
+
+  const response = await api.get(`/approvisionnements/${medicamentId}/historique`);
   return response.data;
 };

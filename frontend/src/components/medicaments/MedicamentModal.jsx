@@ -39,6 +39,7 @@ export default function MedicamentModal({ open, onClose, onSave, medicament }) {
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    // --- VALIDATIONS ---
     if (!form.nom_commercial?.trim()) {
       toast.error("⚠️ Le nom commercial est obligatoire");
       return;
@@ -59,7 +60,8 @@ export default function MedicamentModal({ open, onClose, onSave, medicament }) {
       return;
     }
 
-    onSave({
+    // --- PREPARATION PAYLOAD ---
+    const payload = {
       ...form,
       nom_commercial: form.nom_commercial.trim(),
       unite_nom_commercial: form.unite_nom_commercial?.trim() || null,
@@ -76,7 +78,16 @@ export default function MedicamentModal({ open, onClose, onSave, medicament }) {
       date_expiration: form.date_expiration || null,
       fournisseur: form.fournisseur?.trim() || null,
       observations: form.observations?.trim() || null,
-    });
+    };
+
+    console.log("Payload envoyé :", payload); // <-- pour debug
+
+    try {
+      onSave(payload);
+    } catch (err) {
+      console.error("Erreur onSave :", err);
+      toast.error("❌ Impossible d'envoyer le médicament");
+    }
   };
 
   if (!open) return null;
@@ -113,7 +124,7 @@ export default function MedicamentModal({ open, onClose, onSave, medicament }) {
             </div>
           </div>
 
-          {/* DCI + unité */}
+          {/* Nom DCI + unité */}
           <div>
             <label className="block text-sm font-medium">Nom DCI</label>
             <div className="flex gap-2 mt-1">
@@ -237,7 +248,7 @@ export default function MedicamentModal({ open, onClose, onSave, medicament }) {
             <input
               type="date"
               name="date_expiration"
-              value={form.date_expiration?.slice(0,10) || ""}
+              value={form.date_expiration?.slice(0, 10) || ""}
               onChange={handleChange}
               className="w-full border rounded px-2 py-1 mt-1"
             />

@@ -1,7 +1,6 @@
 // src/pages/admin/MedicamentsPage.jsx
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { toast } from "react-toastify";
-import { useAuth } from "../../auth/AuthContext";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 
@@ -18,7 +17,6 @@ import ApprovisionnementModal from "../../components/medicaments/Approvisionneme
 import ApprovisionnementHistoriqueModal from "../../components/medicaments/ApprovisionnementHistoriqueModal";
 
 export default function MedicamentsPage() {
-  const { token } = useAuth();
 
   // --- STATE ---
   const [rows, setRows] = useState([]);
@@ -45,17 +43,16 @@ export default function MedicamentsPage() {
 
   // --- LOAD MEDICAMENTS ---
   const loadMedicaments = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await getMedicaments(token);
-      setRows(Array.isArray(data) ? data : data.rows ?? []);
-    } catch (err) {
-      console.error("Erreur chargement médicaments :", err?.response?.data || err);
-      toast.error("❌ Impossible de charger les médicaments");
-    } finally {
-      setLoading(false);
-    }
-  }, [token]);
+  setLoading(true);
+  try {
+    const data = await getMedicaments();
+    setRows(Array.isArray(data) ? data : []);
+  } catch (err) {
+    toast.error("❌ Impossible de charger les médicaments");
+  } finally {
+    setLoading(false);
+  }
+}, []);
 
   useEffect(() => { loadMedicaments(); }, [loadMedicaments]);
 
@@ -120,52 +117,54 @@ export default function MedicamentsPage() {
 
   // --- CRUD HANDLERS ---
   const handleAdd = async (payload) => {
-    setSaving(true);
-    try {
-      await createMedicament(token, payload);
-      toast.success("✅ Médicament ajouté");
-      setOpenMedicamentModal(false);
-      await loadMedicaments();
-    } catch (err) {
-      console.error("Erreur ajout médicament:", err?.response?.data || err);
-      toast.error(err?.response?.data?.error || "❌ Échec ajout médicament");
-    } finally { setSaving(false); }
-  };
+  setSaving(true);
+  try {
+    await createMedicament(payload);
+    toast.success("✅ Médicament ajouté");
+    setOpenMedicamentModal(false);
+    await loadMedicaments();
+  } catch (err) {
+    toast.error(err?.response?.data?.error || "❌ Échec ajout médicament");
+  } finally {
+    setSaving(false);
+  }
+};
 
   const handleEdit = async (id, payload) => {
-    setSaving(true);
-    try {
-      await updateMedicament(token, id, payload);
-      toast.success("✅ Médicament mis à jour");
-      setOpenMedicamentModal(false);
-      setSelected(null);
-      await loadMedicaments();
-    } catch (err) {
-      console.error("Erreur modification médicament:", err?.response?.data || err);
-      toast.error(err?.response?.data?.error || "❌ Échec modification");
-    } finally { setSaving(false); }
-  };
+  setSaving(true);
+  try {
+    await updateMedicament(id, payload);
+    toast.success("✅ Médicament mis à jour");
+    setOpenMedicamentModal(false);
+    setSelected(null);
+    await loadMedicaments();
+  } catch (err) {
+    toast.error(err?.response?.data?.error || "❌ Échec modification");
+  } finally {
+    setSaving(false);
+  }
+};
 
   const handleDelete = async (id) => {
-    if (!window.confirm("⚠️ Voulez-vous vraiment supprimer ce médicament ?")) return;
-    setSaving(true);
-    try {
-      await deleteMedicament(token, id);
-      toast.success("🗑️ Médicament supprimé");
-      if ((paginatedRows.length === 1) && page > 1) setPage((p) => p - 1);
-      await loadMedicaments();
-    } catch (err) {
-      console.error("Erreur suppression médicament:", err?.response?.data || err);
-      toast.error(err?.response?.data?.error || "❌ Échec suppression");
-    } finally { setSaving(false); }
-  };
+  if (!window.confirm("⚠️ Voulez-vous vraiment supprimer ce médicament ?")) return;
+  setSaving(true);
+  try {
+    await deleteMedicament(id);
+    toast.success("🗑️ Médicament supprimé");
+    await loadMedicaments();
+  } catch (err) {
+    toast.error(err?.response?.data?.error || "❌ Échec suppression");
+  } finally {
+    setSaving(false);
+  }
+};
 
   // --- APPROVISIONNEMENT ---
   const handleApprovisionnement = async (payload) => {
     if (!selected?.id) { toast.error("⚠️ Aucun médicament sélectionné."); return; }
     setSaving(true);
     try {
-      await createApprovisionnement(token, { medicament_id: selected.id, ...payload });
+      await createApprovisionnement({ medicament_id: selected.id, ...payload });
       toast.success("✅ Approvisionnement enregistré");
       setOpenApproModal(false);
       setSelected(null);
@@ -181,7 +180,7 @@ export default function MedicamentsPage() {
     setSelected(medicament);
     setOpenHistoriqueModal(true);
     try {
-      const data = await getHistoriqueApprovisionnement(token, medicament.id);
+      const data = await getHistoriqueApprovisionnement(medicament.id);
       setHistorique(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Erreur chargement historique :", err?.response?.data || err);
