@@ -16,7 +16,9 @@ exports.getAllHospitalisations = async (req, res) => {
     const offset = (page - 1) * limit;
 
     const where = {};
-    if (statut) where.statut = statut;
+if (statut) {
+  where.statut = statut;
+}
 
     const hospitalisations = await Hospitalisation.findAll({
       where,
@@ -94,7 +96,7 @@ exports.getHospitalisationDashboard = async (req, res) => {
 
     res.json({ total, admises, enCours, cloturees });
   } catch (err) {
-    console.error("Erreur getHospitalisationDashboard:", err);
-    res.status(500).json({ error: "Impossible de charger le dashboard" });
+    console.error("Dashboard hospitalisation error:", err);
+    res.status(500).json({ message: "Erreur dashboard hospitalisations" });
   }
 };

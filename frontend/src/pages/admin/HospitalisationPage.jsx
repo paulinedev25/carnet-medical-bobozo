@@ -41,7 +41,11 @@ export default function HospitalisationPage() {
     setLoading(true);
     try {
       const res = await getHospitalisations({ statut, page, limit: rowsPerPage });
-      const items = res.rows ?? [];
+      const items = Array.isArray(res?.rows)
+  ? res.rows
+  : Array.isArray(res)
+    ? res
+    : [];
       setRows(items);
       console.debug("Hospitalisations chargées:", items);
     } catch (err) {
