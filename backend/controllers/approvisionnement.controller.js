@@ -106,3 +106,10 @@ exports.getHistoriqueByMedicament = async (req, res) => {
     res.status(500).json({ message: "Erreur serveur ⚠️", error: err.message });
   }
 };
+
+exports.getHistorique = async (req, res) => {
+  const { id } = req.params;
+  // Récupérer l'historique depuis la DB
+  const historique = await Approvisionnement.findAll({ where: { medicament_id: id } });
+  res.json(historique);
+};

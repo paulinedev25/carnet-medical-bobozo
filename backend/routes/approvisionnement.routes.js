@@ -13,4 +13,7 @@ router.get("/historique/:medicament_id", auth(["pharmacien", "admin"]), approvis
 router.get("/:id", auth(["pharmacien", "admin"]), approvisionnementController.getApprovisionnementById);
 router.delete("/:id", auth("admin"), approvisionnementController.deleteApprovisionnement);
 
+// routes/approvisionnements.js
+router.get("/:id/historique", auth(), approvisionnementController.getHistorique);
+
 module.exports = router;
