@@ -1,18 +1,18 @@
 // src/api/approvisionnements.js
 import api from "../services/api";
 
-/**
- * ➕ Créer un approvisionnement
- */
-export const createApprovisionnement = async (payload) => {
-  const res = await api.post("/approvisionnements", payload);
-  return res.data;
+// Crée un approvisionnement pour un médicament
+export const createApprovisionnement = async (token, payload) => {
+  const response = await api.post("/approvisionnements", payload, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
 };
 
-/**
- * 📜 Récupérer l’historique des approvisionnements d’un médicament
- */
-export const getApprovisionnementsByMedicament = async (medicamentId) => {
-  const res = await api.get(`/approvisionnements/medicament/${medicamentId}`);
-  return res.data;
+// Récupère l'historique des approvisionnements d'un médicament
+export const getHistoriqueApprovisionnement = async (token, medicamentId) => {
+  const response = await api.get(`/approvisionnements/${medicamentId}/historique`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
 };
