@@ -1,19 +1,63 @@
 const express = require("express");
 const router = express.Router();
-const controller = require("../controllers/hospitalisation.controller");
+
+// ✅ IMPORT OBLIGATOIRE (manquant chez toi)
+const hospitalisationController = require("../controllers/hospitalisation.controller");
+
 const auth = require("../middlewares/auth.middleware");
 
-router.get("/dashboard/stats",
+/**
+ * ⚠️ ORDRE DES ROUTES CRITIQUE
+ * Les routes fixes AVANT les routes dynamiques
+ */
+
+// 📊 Dashboard
+router.get(
+  "/dashboard/stats",
   auth(["admin"]),
   hospitalisationController.getHospitalisationDashboard
 );
 
-router.post("/", auth(["medecin", "infirmier", "admin"]), controller.createHospitalisation);
-router.get("/", auth(["admin", "medecin", "infirmier"]), controller.getAllHospitalisations);
-router.get("/:id", auth(["admin", "medecin", "infirmier"]), controller.getHospitalisationById);
-router.put("/:id", auth(["medecin", "infirmier", "admin"]), controller.updateHospitalisation);
-router.put("/:id/statut", auth(["medecin", "admin"]), controller.changerStatutHospitalisation);
-router.delete("/:id", auth(["admin"]), controller.deleteHospitalisation);
-router.get("/dashboard/stats", auth(["admin"]), controller.getHospitalisationDashboard);
+// 📋 Liste
+router.get(
+  "/",
+  auth(["admin", "medecin", "infirmier"]),
+  hospitalisationController.getAllHospitalisations
+);
+
+// ➕ Créer
+router.post(
+  "/",
+  auth(["medecin", "infirmier", "admin"]),
+  hospitalisationController.createHospitalisation
+);
+
+// 🔍 Détail
+router.get(
+  "/:id",
+  auth(["admin", "medecin", "infirmier"]),
+  hospitalisationController.getHospitalisationById
+);
+
+// ✏️ Mise à jour
+router.put(
+  "/:id",
+  auth(["medecin", "infirmier", "admin"]),
+  hospitalisationController.updateHospitalisation
+);
+
+// 🔄 Changer statut
+router.put(
+  "/:id/statut",
+  auth(["medecin", "admin"]),
+  hospitalisationController.changerStatutHospitalisation
+);
+
+// ❌ Supprimer
+router.delete(
+  "/:id",
+  auth(["admin"]),
+  hospitalisationController.deleteHospitalisation
+);
 
 module.exports = router;
