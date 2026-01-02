@@ -22,7 +22,7 @@ exports.createHospitalisation = async (req, res) => {
       patient_id,
       medecin_id,
       infirmier_id,
-      date_entree,
+      date_entree: new Date(date_entree),
       service,
       diagnostic_admission,
       traitement,
@@ -91,7 +91,14 @@ exports.updateHospitalisation = async (req, res) => {
       return res.status(404).json({ error: "Hospitalisation non trouvée ❌" });
     }
 
-    await hospitalisation.update(req.body);
+    // ✅ Filtrage des champs modifiables
+    const allowedFields = ["service", "diagnostic_admission", "traitement", "observations"];
+    const updateData = {};
+    for (const key of allowedFields) {
+      if (req.body[key] !== undefined) updateData[key] = req.body[key];
+    }
+
+    await hospitalisation.update(updateData);
     res.json({
       message: "Hospitalisation mise à jour ✅",
       hospitalisation,
@@ -101,7 +108,7 @@ exports.updateHospitalisation = async (req, res) => {
   }
 };
 
-// 🔄 Changer statut (admise → en_cours → clôturée)
+// 🔄 Changer statut (admise → en_cours → cloturee)
 exports.changerStatutHospitalisation = async (req, res) => {
   try {
     const { id } = req.params;
@@ -148,7 +155,7 @@ exports.getHospitalisationDashboard = async (req, res) => {
     const total = await Hospitalisation.count();
     const admises = await Hospitalisation.count({ where: { statut: "admise" } });
     const enCours = await Hospitalisation.count({ where: { statut: "en_cours" } });
-    const cloturees = await Hospitalisation.count({ where: { statut: "clôturée" } });
+    const cloturees = await Hospitalisation.count({ where: { statut: "cloturee" } });
 
     const parService = await Hospitalisation.findAll({
       attributes: [

@@ -78,3 +78,32 @@ export const deleteHospitalisation = async (id) => {
     throw error;
   }
 };
+
+/**
+ * 🔄 Changer le statut d'une hospitalisation
+ */
+export const changerStatutHospitalisation = async (id, payload) => {
+  try {
+    if (!id) throw new Error("ID hospitalisation manquant");
+    console.log(`🔄 PUT /hospitalisations/${id}/statut →`, payload);
+    const res = await api.put(`/hospitalisations/${id}/statut`, payload);
+    return res.data;
+  } catch (error) {
+    console.error("❌ Erreur changerStatutHospitalisation :", error);
+    throw error;
+  }
+};
+
+/**
+ * 📊 Dashboard hospitalisations
+ */
+export const getHospitalisationDashboard = async () => {
+  try {
+    const res = await api.get("/hospitalisations/dashboard/stats");
+    console.log("📊 Dashboard hospitalisations :", res.data);
+    return res.data;
+  } catch (error) {
+    console.error("❌ Erreur getHospitalisationDashboard :", error);
+    throw error;
+  }
+};
