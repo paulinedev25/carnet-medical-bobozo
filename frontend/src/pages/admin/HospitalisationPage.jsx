@@ -54,14 +54,14 @@ export default function HospitalisationPage() {
 
   // Charger dashboard
   const loadDashboard = useCallback(async () => {
-    if (!token) return;
-    try {
-      const data = await getHospitalisationDashboard(token);
-      setDashboard(data);
-    } catch (err) {
-      console.error("Erreur dashboard:", err);
-    }
-  }, [token]);
+  if (!token) return;
+  try {
+    const data = await getHospitalisationDashboard(token);
+    setDashboard(data);
+  } catch (err) {
+    console.error("Erreur dashboard:", err);
+  }
+}, [token]);
 
   useEffect(() => { loadData(); }, [loadData]);
   useEffect(() => { loadDashboard(); }, [loadDashboard]);
@@ -115,17 +115,17 @@ export default function HospitalisationPage() {
 
   // Changer statut directement
   const handleChangerStatut = async (h) => {
-    const nextStatut = h.statut === "admise" ? "en_cours" : h.statut === "en_cours" ? "cloturee" : "admise";
-    try {
-      await changerStatutHospitalisation(h.id, { statut: nextStatut });
-      toast.success(`Statut changé en ${labelStatut(nextStatut)}`);
-      await loadData();
-      await loadDashboard();
-    } catch (err) {
-      console.error("Erreur changement statut:", err);
-      toast.error("❌ Échec changement statut");
-    }
-  };
+  const nextStatut = h.statut === "admise" ? "en_cours" : h.statut === "en_cours" ? "cloturee" : "admise";
+  try {
+    await changerStatutHospitalisation(h.id, { statut: nextStatut }, token);
+    toast.success(`Statut changé en ${labelStatut(nextStatut)}`);
+    await loadData();
+    await loadDashboard();
+  } catch (err) {
+    console.error("Erreur changement statut:", err);
+    toast.error("❌ Échec changement statut");
+  }
+};
 
   // CRUD
   const handleSave = async (payload) => {

@@ -82,11 +82,12 @@ export const deleteHospitalisation = async (id) => {
 /**
  * 🔄 Changer le statut d'une hospitalisation
  */
-export const changerStatutHospitalisation = async (id, payload) => {
+export const changerStatutHospitalisation = async (id, payload, token) => {
   try {
     if (!id) throw new Error("ID hospitalisation manquant");
-    console.log(`🔄 PUT /hospitalisations/${id}/statut →`, payload);
-    const res = await api.put(`/hospitalisations/${id}/statut`, payload);
+    const res = await api.put(`/hospitalisations/${id}/statut`, payload, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     return res.data;
   } catch (error) {
     console.error("❌ Erreur changerStatutHospitalisation :", error);
@@ -97,9 +98,11 @@ export const changerStatutHospitalisation = async (id, payload) => {
 /**
  * 📊 Dashboard hospitalisations
  */
-export const getHospitalisationDashboard = async () => {
+export const getHospitalisationDashboard = async (token) => {
   try {
-    const res = await api.get("/hospitalisations/dashboard/stats");
+    const res = await api.get("/hospitalisations/dashboard/stats", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     console.log("📊 Dashboard hospitalisations :", res.data);
     return res.data;
   } catch (error) {
