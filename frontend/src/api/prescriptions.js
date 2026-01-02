@@ -2,7 +2,8 @@
 import api from "../services/api";
 
 /**
- * 📋 Liste des prescriptions (avec filtres)
+ * 📋 Liste des prescriptions (option filtres)
+ * params: { page, limit, statut, consultation_id, medicament_id, search }
  */
 export const getPrescriptions = async (params = {}) => {
   try {
@@ -16,6 +17,7 @@ export const getPrescriptions = async (params = {}) => {
 
 /**
  * 🧾 Créer une prescription (Médecin / Admin)
+ * payload: { consultation_id, medicament_id?, medicament_nom?, posologie, duree, observations?, quantite }
  */
 export const createPrescription = async (payload) => {
   try {
@@ -28,7 +30,8 @@ export const createPrescription = async (payload) => {
 };
 
 /**
- * 💊 Mettre à jour une prescription (Pharmacien / Admin)
+ * ✏️ Mettre à jour une prescription (Pharmacien / Admin)
+ * payload: { statut?, observations?, medicament_id?, medicament_nom?, quantite? }
  */
 export const updatePrescription = async (id, payload) => {
   try {
@@ -36,6 +39,20 @@ export const updatePrescription = async (id, payload) => {
     return res.data;
   } catch (error) {
     console.error("❌ Erreur updatePrescription :", error);
+    throw error;
+  }
+};
+
+/**
+ * 💊 Délivrer une prescription (Pharmacien / Admin)
+ * payload: { quantite_delivree }
+ */
+export const deliverPrescription = async (id, payload) => {
+  try {
+    const res = await api.put(`/prescriptions/${id}/delivrer`, payload);
+    return res.data;
+  } catch (error) {
+    console.error("❌ Erreur deliverPrescription :", error);
     throw error;
   }
 };
@@ -54,15 +71,27 @@ export const deletePrescription = async (id) => {
 };
 
 /**
- * 💊 Délivrer une prescription (Pharmacien / Admin)
- * Ex: { quantite_delivree: 1, unite: 'mg', observations: '...' }
+ * 📋 Prescriptions par consultation
  */
-export const deliverPrescription = async (id, payload) => {
+export const getPrescriptionsByConsultation = async (consultation_id) => {
   try {
-    const res = await api.put(`/prescriptions/${id}/delivrer`, payload);
+    const res = await api.get(`/prescriptions/consultation/${consultation_id}`);
     return res.data;
   } catch (error) {
-    console.error("❌ Erreur deliverPrescription :", error);
+    console.error("❌ Erreur getPrescriptionsByConsultation :", error);
+    throw error;
+  }
+};
+
+/**
+ * 📊 Dashboard / Statistiques
+ */
+export const getPrescriptionDashboard = async () => {
+  try {
+    const res = await api.get("/prescriptions/dashboard");
+    return res.data;
+  } catch (error) {
+    console.error("❌ Erreur getPrescriptionDashboard :", error);
     throw error;
   }
 };

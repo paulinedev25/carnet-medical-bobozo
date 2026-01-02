@@ -1,14 +1,8 @@
 // src/pages/admin/PrescriptionsPage.jsx
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { toast } from "react-toastify";
 import { useAuth } from "../../auth/AuthContext";
-import {
-  getPrescriptions,
-  createPrescription,
-  updatePrescription,
-  deletePrescription,
-  deliverPrescription,
-} from "../../api/prescriptions";
+import { usePrescriptions } from "../../hooks/usePrescriptions";
 import { getMedicaments } from "../../api/medicaments";
 import { getConsultations } from "../../api/consultations";
 
@@ -19,94 +13,56 @@ import { printOrdonnancePDF } from "../../components/prescriptions/PrintOrdonnan
 export default function PrescriptionsPage() {
   const { token, user } = useAuth();
 
-  const [prescriptions, setPrescriptions] = useState([]);
+  const {
+    rows: prescriptions,
+    loading,
+    saving,
+    add,
+    edit,
+    remove,
+    deliver,
+    reload,
+    fetchByConsultation,
+  } = usePrescriptions();
+
   const [medicaments, setMedicaments] = useState([]);
   const [consultations, setConsultations] = useState([]);
-
-  const [loadingPrescriptions, setLoadingPrescriptions] = useState(false);
-  const [loadingMedicaments, setLoadingMedicaments] = useState(false);
-  const [loadingConsultations, setLoadingConsultations] = useState(false);
-  const [saving, setSaving] = useState(false);
-
   const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState(null);
   const [openPrescriptionModal, setOpenPrescriptionModal] = useState(false);
   const [openDeliverModal, setOpenDeliverModal] = useState(false);
-  const [selected, setSelected] = useState(null);
-
-  // ---------- helpers ----------
-  const normalizeRows = (res) => {
-    if (!res) return [];
-    if (Array.isArray(res)) return res;
-    if (Array.isArray(res.rows)) return res.rows;
-    if (Array.isArray(res.consultations)) return res.consultations;
-    if (Array.isArray(res.data)) return res.data;
-    return [];
-  };
-
-  // ---------- chargement prescriptions ----------
-  const loadPrescriptions = useCallback(
-    async (opts = {}) => {
-      if (!token) return;
-      setLoadingPrescriptions(true);
-      try {
-        const res = await getPrescriptions(token, opts);
-        console.log("API prescriptions raw response:", res);
-        setPrescriptions(normalizeRows(res));
-      } catch (err) {
-        console.error("Erreur chargement prescriptions", err);
-        const serverMsg = err?.response?.data?.message || err.message || "Erreur inconnue serveur";
-        toast.error(`❌ Impossible de charger les prescriptions: ${serverMsg}`);
-      } finally {
-        setLoadingPrescriptions(false);
-      }
-    },
-    [token]
-  );
 
   // ---------- chargement médicaments ----------
-  const loadMedicaments = useCallback(async () => {
+  useEffect(() => {
     if (!token) return;
-    setLoadingMedicaments(true);
-    try {
-      const res = await getMedicaments(token);
-      console.debug("Medicaments API:", res);
-      setMedicaments(normalizeRows(res));
-    } catch (err) {
-      console.error("Erreur chargement médicaments", err);
-      toast.error(err?.response?.data?.message || "❌ Impossible de charger les médicaments");
-    } finally {
-      setLoadingMedicaments(false);
-    }
+    const loadMedicaments = async () => {
+      try {
+        const res = await getMedicaments();
+        setMedicaments(Array.isArray(res) ? res : []);
+      } catch (err) {
+        console.error("Erreur chargement médicaments", err);
+        toast.error("❌ Impossible de charger les médicaments");
+      }
+    };
+    loadMedicaments();
   }, [token]);
 
   // ---------- chargement consultations ----------
-  const loadConsultations = useCallback(async () => {
+  useEffect(() => {
     if (!token || user?.role === "pharmacien") return;
-    setLoadingConsultations(true);
-    try {
-      const res = await getConsultations(token);
-      console.debug("Consultations API:", res);
-      setConsultations(normalizeRows(res));
-    } catch (err) {
-      console.error("Erreur chargement consultations", err);
-      if (user?.role !== "pharmacien") {
-        toast.error(err?.response?.data?.message || "❌ Impossible de charger les consultations");
+    const loadConsultations = async () => {
+      try {
+        const res = await getConsultations();
+        setConsultations(Array.isArray(res) ? res : []);
+      } catch (err) {
+        console.error("Erreur chargement consultations", err);
+        toast.error("❌ Impossible de charger les consultations");
       }
-    } finally {
-      setLoadingConsultations(false);
-    }
+    };
+    loadConsultations();
   }, [token, user]);
 
-  // Initial load
-  useEffect(() => {
-    if (!token) return;
-    loadPrescriptions();
-    loadMedicaments();
-    loadConsultations();
-  }, [token, loadPrescriptions, loadMedicaments, loadConsultations]);
-
   // ---------- recherche ----------
-  const safeToLower = (v) => (typeof v === "string" ? v.toLowerCase() : "");
   const filtered = useMemo(() => {
     const q = (search || "").trim().toLowerCase();
     if (!q) return prescriptions;
@@ -115,121 +71,87 @@ export default function PrescriptionsPage() {
       const medName =
         p.medicament?.nom_commercial || p.medicament?.nom || p.medicament_nom || "";
       return (
-        safeToLower(medName).includes(q) ||
-        safeToLower(patient.nom).includes(q) ||
-        safeToLower(patient.prenom).includes(q)
+        (patient.nom || "").toLowerCase().includes(q) ||
+        (patient.prenom || "").toLowerCase().includes(q) ||
+        medName.toLowerCase().includes(q)
       );
     });
-  }, [prescriptions, search]);
+  }, [search, prescriptions]);
 
-  // ---------- CRUD ----------
-  const handleSave = async (action, idOrPayload, payload) => {
-    if (!token) {
-      toast.error("Non authentifié");
-      return;
-    }
-    setSaving(true);
+  // ---------- CRUD handlers ----------
+  const handleSave = async (payload) => {
     try {
-      let res;
-      if (action === "create") res = await createPrescription(token, idOrPayload);
-      else if (action === "update") res = await updatePrescription(token, idOrPayload, payload);
-
-      if (res?.message) toast.success(res.message);
+      if (selected) await edit(selected.id, payload);
+      else await add(payload);
 
       setOpenPrescriptionModal(false);
       setSelected(null);
-      await loadPrescriptions();
-
-      if (res?.rupture && res.prescription) {
-        toast.warning("⚠️ Médicament en rupture");
-        printOrdonnancePDF(res.prescription);
-      }
+      toast.success("✅ Prescription enregistrée");
     } catch (err) {
-      console.error(`Erreur ${action} prescription`, err);
-      toast.error(err?.response?.data?.message || `❌ Erreur ${action} prescription`);
-    } finally {
-      setSaving(false);
+      console.error("Erreur sauvegarde prescription", err);
+      toast.error(err?.message || "❌ Erreur sauvegarde prescription");
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("⚠️ Voulez-vous supprimer cette prescription ?")) return;
-    if (!token) return toast.error("Non authentifié");
-
-    setSaving(true);
+    if (!window.confirm("⚠️ Supprimer cette prescription ?")) return;
     try {
-      await deletePrescription(token, id);
+      await remove(id);
       toast.success("🗑️ Prescription supprimée");
-      await loadPrescriptions();
     } catch (err) {
       console.error("Erreur suppression prescription", err);
-      toast.error(err?.response?.data?.message || "❌ Erreur suppression");
-    } finally {
-      setSaving(false);
+      toast.error(err?.message || "❌ Erreur suppression");
     }
   };
 
   const handleDeliver = async (payload) => {
     if (!selected) return toast.error("⚠️ Aucune prescription sélectionnée");
-    if (!token) return toast.error("Non authentifié");
-
-    setSaving(true);
     try {
-      const res = await deliverPrescription(token, selected.id, payload);
-      toast.success(res?.message || "💊 Prescription délivrée");
+      await deliver(selected.id, payload);
       setOpenDeliverModal(false);
       setSelected(null);
-      await loadPrescriptions();
-      await loadMedicaments(); // ⚡️ mise à jour stock après livraison
+      toast.success("💊 Prescription délivrée");
     } catch (err) {
-      console.error("Erreur délivrance:", err);
-      const data = err?.response?.data;
-      if (data?.rupture) {
-        toast.error(data.message || "⚠️ Stock insuffisant");
-        if (window.confirm("Le produit est en rupture. Imprimer l'ordonnance ?")) {
+      console.error("Erreur délivrance", err);
+      if (err?.rupture) {
+        toast.error(err.message || "⚠️ Stock insuffisant");
+        if (window.confirm("Imprimer l'ordonnance malgré la rupture ?")) {
           printOrdonnancePDF(selected);
         }
       } else {
-        toast.error(data?.message || "❌ Erreur délivrance");
+        toast.error(err?.message || "❌ Erreur délivrance");
       }
-    } finally {
-      setSaving(false);
     }
   };
 
   const handlePrint = (prescription) => {
     try {
       printOrdonnancePDF(prescription);
-      toast.success("Ordonnance (PDF) générée");
+      toast.success("Ordonnance PDF générée");
     } catch (err) {
       console.error("Erreur impression ordonnance", err);
       toast.error("❌ Impossible de générer l'ordonnance");
     }
   };
 
-  // ---------- UI ----------
   if (!token) {
     return (
-      <div className="p-6">
-        <p className="text-red-500">
-          Vous devez être authentifié pour accéder à cette page.
-        </p>
+      <div className="p-6 text-red-500">
+        Vous devez être authentifié pour accéder à cette page.
       </div>
     );
   }
 
-  const isLoading = loadingPrescriptions || loadingMedicaments || loadingConsultations;
-
   return (
     <div className="p-6">
       {/* HEADER */}
-      <div className="flex flex-wrap justify-between items-center mb-4 gap-2">
+      <div className="flex justify-between items-center mb-4">
         <h1 className="text-xl font-semibold">💊 Prescriptions</h1>
         <div className="flex gap-2 items-center">
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="🔍 Rechercher (patient / médicament)"
+            placeholder="🔍 Rechercher patient / médicament"
             className="border rounded px-3 py-2"
           />
           {user?.role === "medecin" && (
@@ -249,7 +171,7 @@ export default function PrescriptionsPage() {
 
       {/* TABLE */}
       <div className="bg-white rounded shadow overflow-x-auto">
-        {isLoading ? (
+        {loading ? (
           <div className="py-6 text-center text-gray-500">⏳ Chargement...</div>
         ) : (
           <table className="min-w-full text-sm">
@@ -276,26 +198,17 @@ export default function PrescriptionsPage() {
                     </td>
                     <td className="px-4 py-2">
                       {p.medicament
-                        ? `${p.medicament.nom_commercial || p.medicament.nom || p.medicament_nom} ${p.medicament.unite || p.unite || ""}`
+                        ? `${p.medicament.nom_commercial || p.medicament.nom || p.medicament_nom} ${p.medicament.unite || ""}`
                         : "-"}
                     </td>
-
                     <td className="px-4 py-2">{p.posologie}</td>
                     <td className="px-4 py-2">{p.duree}</td>
                     <td className="px-4 py-2">{p.statut}</td>
                     <td className="px-4 py-2 flex gap-2">
-                      <button
-                        onClick={() => handlePrint(p)}
-                        className="px-2 py-1 rounded border hover:bg-gray-100"
-                      >
-                        📄
-                      </button>
+                      <button onClick={() => handlePrint(p)} className="px-2 py-1 rounded border hover:bg-gray-100">📄</button>
                       {user?.role === "pharmacien" && (
                         <button
-                          onClick={() => {
-                            setSelected(p);
-                            setOpenDeliverModal(true);
-                          }}
+                          onClick={() => { setSelected(p); setOpenDeliverModal(true); }}
                           className="px-2 py-1 rounded border hover:bg-green-100"
                         >
                           💊
@@ -303,10 +216,7 @@ export default function PrescriptionsPage() {
                       )}
                       {user?.role === "medecin" && (
                         <button
-                          onClick={() => {
-                            setSelected(p);
-                            setOpenPrescriptionModal(true);
-                          }}
+                          onClick={() => { setSelected(p); setOpenPrescriptionModal(true); }}
                           className="px-2 py-1 rounded border hover:bg-yellow-100"
                         >
                           ✏️
@@ -338,26 +248,18 @@ export default function PrescriptionsPage() {
       {/* MODALES */}
       <PrescriptionModal
         open={openPrescriptionModal}
-        onClose={() => {
-          setOpenPrescriptionModal(false);
-          setSelected(null);
-        }}
-        onSave={(payload) =>
-          selected ? handleSave("update", selected.id, payload) : handleSave("create", payload)
-        }
+        onClose={() => { setOpenPrescriptionModal(false); setSelected(null); }}
+        onSave={handleSave}
         medicaments={medicaments}
         consultations={consultations}
         prescription={selected}
       />
       <DeliverModal
         open={openDeliverModal}
-        onClose={() => {
-          setOpenDeliverModal(false);
-          setSelected(null);
-        }}
+        onClose={() => { setOpenDeliverModal(false); setSelected(null); }}
         onDeliver={handleDeliver}
         prescription={selected}
-        medicaments={medicaments} // ⚡️ passer la liste complète pour stock réel
+        medicaments={medicaments}
       />
     </div>
   );
