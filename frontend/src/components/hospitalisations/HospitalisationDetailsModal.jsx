@@ -20,6 +20,15 @@ export default function HospitalisationDetailsModal({ open, onClose, hospitalisa
     }
   };
 
+  const labelStatut = (s) => {
+    switch (s) {
+      case "admise": return "Admise";
+      case "en_cours": return "En cours";
+      case "cloturee": return "Clôturée";
+      default: return s;
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-2xl shadow-lg overflow-y-auto max-h-[90vh]">
@@ -68,7 +77,7 @@ export default function HospitalisationDetailsModal({ open, onClose, hospitalisa
                   : "bg-green-100 text-green-700"
               }`}
             >
-              {hospitalisation.statut}
+              {labelStatut(hospitalisation.statut)}
             </span>
           </p>
         </div>
@@ -80,10 +89,10 @@ export default function HospitalisationDetailsModal({ open, onClose, hospitalisa
           <div>
             <h3 className="text-md font-semibold mb-2">📑 Billet de sortie</h3>
             <p>
-              <strong>Date :</strong> {formatDate(hospitalisation.billet_sortie.date_sortie)}
+              <strong>Date :</strong> {formatDate(hospitalisation.billet_sortie?.date_sortie)}
             </p>
             <p>
-              <strong>Motif :</strong> {hospitalisation.billet_sortie.motif || "-"}
+              <strong>Motif :</strong> {hospitalisation.billet_sortie?.motif || "-"}
             </p>
           </div>
         )}

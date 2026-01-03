@@ -112,7 +112,7 @@ export default function HospitalisationModal({ open, onClose, onSave, hospitalis
               <option value="">-- Choisir --</option>
               {patients.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.nom} {p.postnom} {p.prenom}
+                  {p.nom} {p.postnom || ""} {p.prenom}
                 </option>
               ))}
             </select>

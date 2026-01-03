@@ -42,10 +42,10 @@ export default function HospitalisationPage() {
     try {
       const res = await getHospitalisations({ statut, page, limit: rowsPerPage });
       const items = Array.isArray(res?.rows)
-  ? res.rows
-  : Array.isArray(res)
-    ? res
-    : [];
+        ? res.rows
+        : Array.isArray(res)
+        ? res
+        : [];
       setRows(items);
       console.debug("Hospitalisations chargées:", items);
     } catch (err) {
@@ -62,7 +62,16 @@ export default function HospitalisationPage() {
     if (!token) return;
     try {
       const data = await getHospitalisationDashboard();
-      setDashboard(data);
+      const stats = {
+        total: data.total,
+        admise: 0,
+        en_cours: 0,
+        cloturee: 0,
+      };
+      data.parStatut.forEach((s) => {
+        stats[s.statut] = parseInt(s.total, 10);
+      });
+      setDashboard(stats);
     } catch (err) {
       console.error("Erreur dashboard:", err);
       toast.error("Impossible de charger le dashboard ❌");
@@ -201,9 +210,9 @@ export default function HospitalisationPage() {
       {dashboard && (
         <div className="mb-4 flex gap-4 text-sm">
           <div className="bg-gray-100 rounded p-2">📦 Total: {dashboard.total}</div>
-          <div className="bg-blue-100 rounded p-2 text-blue-700">Admis: {dashboard.admises}</div>
-          <div className="bg-yellow-100 rounded p-2 text-yellow-700">En cours: {dashboard.enCours}</div>
-          <div className="bg-green-100 rounded p-2 text-green-700">Clôturées: {dashboard.cloturees}</div>
+          <div className="bg-blue-100 rounded p-2 text-blue-700">Admis: {dashboard.admise}</div>
+          <div className="bg-yellow-100 rounded p-2 text-yellow-700">En cours: {dashboard.en_cours}</div>
+          <div className="bg-green-100 rounded p-2 text-green-700">Clôturées: {dashboard.cloturee}</div>
         </div>
       )}
 
@@ -217,7 +226,7 @@ export default function HospitalisationPage() {
             {paginatedRows.map((h, idx) => (
               <tr key={h.id} className="border-t hover:bg-gray-50">
                 <td className="px-4 py-2">{(page - 1) * rowsPerPage + idx + 1}</td>
-                <td className="px-4 py-2">{h.patient?.nom} {h.patient?.postnom} {h.patient?.prenom}</td>
+                <td className="px-4 py-2">{h.patient?.nom} {h.patient?.postnom || ""} {h.patient?.prenom}</td>
                 <td className="px-4 py-2">{h.medecin?.noms || "-"}</td>
                 <td className="px-4 py-2">{h.infirmier?.noms || "-"}</td>
                 <td className="px-4 py-2">{formatDate(h.date_entree)}</td>
