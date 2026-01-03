@@ -1,102 +1,141 @@
-const { Hospitalisation, Patient, Medecin, Infirmier } = require("../models");
+const { Hospitalisation, Patient, User } = require("../models");
 
-exports.createHospitalisation = async (req, res) => {
-  try {
-    const data = await Hospitalisation.create(req.body);
-    res.status(201).json(data);
-  } catch (err) {
-    console.error("Erreur createHospitalisation:", err);
-    res.status(500).json({ error: "Impossible de créer l'hospitalisation" });
-  }
-};
+module.exports = {
 
-exports.getAllHospitalisations = async (req, res) => {
-  try {
-    const { page = 1, limit = 10, statut } = req.query;
-    const offset = (page - 1) * limit;
+  // 📋 LISTE
+  async getAllHospitalisations(req, res) {
+    try {
+      let { page = 1, limit = 10, statut } = req.query;
 
-    const where = {};
-if (statut) {
-  where.statut = statut;
-}
+      page = parseInt(page, 10);
+      limit = parseInt(limit, 10);
 
-    const hospitalisations = await Hospitalisation.findAll({
-      where,
-      include: [Patient, Medecin, Infirmier],
-      offset: parseInt(offset),
-      limit: parseInt(limit),
-      order: [["date_entree", "DESC"]],
-    });
+      if (Number.isNaN(page) || page < 1) page = 1;
+      if (Number.isNaN(limit) || limit < 1) limit = 10;
 
-    res.json({ rows: hospitalisations, count: hospitalisations.length, page: parseInt(page), limit: parseInt(limit) });
-  } catch (err) {
-    console.error("Erreur getAllHospitalisations:", err);
-    res.status(500).json({ error: "Impossible de récupérer les hospitalisations" });
-  }
-};
+      const where = {};
+      if (statut) where.statut = statut;
 
-exports.getHospitalisationById = async (req, res) => {
-  try {
-    const h = await Hospitalisation.findByPk(req.params.id, { include: [Patient, Medecin, Infirmier] });
-    if (!h) return res.status(404).json({ error: "Hospitalisation non trouvée" });
-    res.json(h);
-  } catch (err) {
-    console.error("Erreur getHospitalisationById:", err);
-    res.status(500).json({ error: "Impossible de récupérer l'hospitalisation" });
-  }
-};
+      const result = await Hospitalisation.findAndCountAll({
+        where,
+        limit,
+        offset: (page - 1) * limit,
+        order: [["date_entree", "DESC"]],
+        include: [
+          { model: Patient, as: "patient" },
+          { model: User, as: "medecin" },
+          { model: User, as: "infirmier" },
+        ],
+      });
 
-exports.updateHospitalisation = async (req, res) => {
-  try {
-    const h = await Hospitalisation.findByPk(req.params.id);
-    if (!h) return res.status(404).json({ error: "Hospitalisation non trouvée" });
+      return res.json({
+        rows: result.rows,
+        count: result.count,
+        page,
+        limit,
+      });
+    } catch (error) {
+      console.error("❌ getAllHospitalisations:", error);
+      return res.status(500).json({ message: "Erreur chargement hospitalisations" });
+    }
+  },
 
-    await h.update(req.body);
-    res.json(h);
-  } catch (err) {
-    console.error("Erreur updateHospitalisation:", err);
-    res.status(500).json({ error: "Impossible de mettre à jour l'hospitalisation" });
-  }
-};
+  // 📊 DASHBOARD
+  async getHospitalisationDashboard(req, res) {
+    try {
+      const [total, admises, enCours, cloturees] = await Promise.all([
+        Hospitalisation.count(),
+        Hospitalisation.count({ where: { statut: "admise" } }),
+        Hospitalisation.count({ where: { statut: "en_cours" } }),
+        Hospitalisation.count({ where: { statut: "cloturee" } }),
+      ]);
 
-exports.changerStatutHospitalisation = async (req, res) => {
-  try {
-    const h = await Hospitalisation.findByPk(req.params.id);
-    if (!h) return res.status(404).json({ error: "Hospitalisation non trouvée" });
+      return res.json({
+        total,
+        admises,
+        enCours,
+        cloturees,
+      });
+    } catch (error) {
+      console.error("❌ getHospitalisationDashboard:", error);
+      return res.status(500).json({ message: "Erreur dashboard hospitalisations" });
+    }
+  },
 
-    h.statut = req.body.statut;
-    await h.save();
+  // ➕ CREATE
+  async createHospitalisation(req, res) {
+    try {
+      const hosp = await Hospitalisation.create(req.body);
+      return res.status(201).json(hosp);
+    } catch (error) {
+      console.error("❌ createHospitalisation:", error);
+      return res.status(500).json({ message: "Erreur création hospitalisation" });
+    }
+  },
 
-    res.json(h);
-  } catch (err) {
-    console.error("Erreur changerStatutHospitalisation:", err);
-    res.status(500).json({ error: "Impossible de changer le statut" });
-  }
-};
+  // 🔍 GET BY ID
+  async getHospitalisationById(req, res) {
+    try {
+      const hosp = await Hospitalisation.findByPk(req.params.id, {
+        include: [
+          { model: Patient, as: "patient" },
+          { model: User, as: "medecin" },
+          { model: User, as: "infirmier" },
+        ],
+      });
 
-exports.deleteHospitalisation = async (req, res) => {
-  try {
-    const h = await Hospitalisation.findByPk(req.params.id);
-    if (!h) return res.status(404).json({ error: "Hospitalisation non trouvée" });
+      if (!hosp) {
+        return res.status(404).json({ message: "Hospitalisation introuvable" });
+      }
 
-    await h.destroy();
-    res.json({ message: "Hospitalisation supprimée" });
-  } catch (err) {
-    console.error("Erreur deleteHospitalisation:", err);
-    res.status(500).json({ error: "Impossible de supprimer l'hospitalisation" });
-  }
-};
+      return res.json(hosp);
+    } catch (error) {
+      console.error("❌ getHospitalisationById:", error);
+      return res.status(500).json({ message: "Erreur récupération hospitalisation" });
+    }
+  },
 
-exports.getHospitalisationDashboard = async (req, res) => {
-  try {
-    const total = await Hospitalisation.count();
-    const admises = await Hospitalisation.count({ where: { statut: "admise" } });
-    const enCours = await Hospitalisation.count({ where: { statut: "en_cours" } });
-    const cloturees = await Hospitalisation.count({ where: { statut: "cloturee" } });
+  // ✏️ UPDATE
+  async updateHospitalisation(req, res) {
+    try {
+      const hosp = await Hospitalisation.findByPk(req.params.id);
+      if (!hosp) return res.status(404).json({ message: "Introuvable" });
 
-    res.json({ total, admises, enCours, cloturees });
-  } catch (err) {
-    console.error("Dashboard hospitalisation error:", err);
-    res.status(500).json({ message: "Erreur dashboard hospitalisations" });
-  }
+      await hosp.update(req.body);
+      return res.json(hosp);
+    } catch (error) {
+      console.error("❌ updateHospitalisation:", error);
+      return res.status(500).json({ message: "Erreur mise à jour" });
+    }
+  },
+
+  // 🔄 STATUT
+  async changerStatutHospitalisation(req, res) {
+    try {
+      const hosp = await Hospitalisation.findByPk(req.params.id);
+      if (!hosp) return res.status(404).json({ message: "Introuvable" });
+
+      hosp.statut = req.body.statut;
+      await hosp.save();
+
+      return res.json(hosp);
+    } catch (error) {
+      console.error("❌ changerStatutHospitalisation:", error);
+      return res.status(500).json({ message: "Erreur changement statut" });
+    }
+  },
+
+  // ❌ DELETE
+  async deleteHospitalisation(req, res) {
+    try {
+      const hosp = await Hospitalisation.findByPk(req.params.id);
+      if (!hosp) return res.status(404).json({ message: "Introuvable" });
+
+      await hosp.destroy();
+      return res.json({ message: "Supprimée" });
+    } catch (error) {
+      console.error("❌ deleteHospitalisation:", error);
+      return res.status(500).json({ message: "Erreur suppression" });
+    }
+  },
 };
