@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
-// ✅ IMPORT OBLIGATOIRE (manquant chez toi)
+// ✅ Import du controller
 const hospitalisationController = require("../controllers/hospitalisation.controller");
 
 const auth = require("../middlewares/auth.middleware");
@@ -11,28 +11,28 @@ const auth = require("../middlewares/auth.middleware");
  * Les routes fixes AVANT les routes dynamiques
  */
 
-// 📊 Dashboard
+// 📊 Dashboard hospitalisations
 router.get(
   "/dashboard/stats",
   auth(["admin"]),
   hospitalisationController.getHospitalisationDashboard
 );
 
-// 📋 Liste
+// 📋 Liste des hospitalisations
 router.get(
   "/",
   auth(["admin", "medecin", "infirmier"]),
   hospitalisationController.getAllHospitalisations
 );
 
-// ➕ Créer
+// ➕ Créer une hospitalisation
 router.post(
   "/",
   auth(["medecin", "infirmier", "admin"]),
   hospitalisationController.createHospitalisation
 );
 
-// 🔍 Détail
+// 🔍 Détail par ID
 router.get(
   "/:id",
   auth(["admin", "medecin", "infirmier"]),
@@ -46,7 +46,7 @@ router.put(
   hospitalisationController.updateHospitalisation
 );
 
-// 🔄 Changer statut
+// 🔄 Changer le statut
 router.put(
   "/:id/statut",
   auth(["medecin", "admin"]),

@@ -1,4 +1,12 @@
-const { Hospitalisation, Patient, Medecin, Infirmier } = require("../models");
+const db = require("../models");
+
+const {
+  Hospitalisation,
+  Patient,
+  Utilisateur,
+  BilletSortie,
+  Sequelize,
+} = db;
 
 /**
  * ➕ Créer une hospitalisation
@@ -18,12 +26,12 @@ exports.createHospitalisation = async (req, res) => {
  */
 exports.getAllHospitalisations = async (req, res) => {
   try {
-    const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 10;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
 
     const where = {};
-    if (req.query.statut && req.query.statut !== "") {
+    if (req.query.statut) {
       where.statut = req.query.statut;
     }
 
@@ -31,17 +39,18 @@ exports.getAllHospitalisations = async (req, res) => {
       where,
       limit,
       offset,
-      order: [["createdAt", "DESC"]],
+      order: [["id", "DESC"]], // champ existant
       include: [
         { model: Patient, as: "patient", required: false },
-        { model: Medecin, as: "medecin", required: false },
-        { model: Infirmier, as: "infirmier", required: false },
+        { model: Utilisateur, as: "medecin", required: false },
+        { model: Utilisateur, as: "infirmier", required: false },
+        { model: BilletSortie, as: "billet_sortie", required: false },
       ],
     });
 
     res.json({
-      rows: result.rows || [],
-      count: result.count || 0,
+      rows: result.rows,
+      count: result.count,
       page,
       limit,
     });
@@ -52,15 +61,18 @@ exports.getAllHospitalisations = async (req, res) => {
 };
 
 /**
- * 🔍 Récupérer une hospitalisation par ID
+ * 🔍 Détail hospitalisation par ID
  */
 exports.getHospitalisationById = async (req, res) => {
   try {
-    const hospitalisation = await Hospitalisation.findByPk(req.params.id, {
+    const { id } = req.params;
+
+    const hospitalisation = await Hospitalisation.findByPk(id, {
       include: [
         { model: Patient, as: "patient", required: false },
-        { model: Medecin, as: "medecin", required: false },
-        { model: Infirmier, as: "infirmier", required: false },
+        { model: Utilisateur, as: "medecin", required: false },
+        { model: Utilisateur, as: "infirmier", required: false },
+        { model: BilletSortie, as: "billet_sortie", required: false },
       ],
     });
 
@@ -80,15 +92,14 @@ exports.getHospitalisationById = async (req, res) => {
  */
 exports.updateHospitalisation = async (req, res) => {
   try {
-    const [updated] = await Hospitalisation.update(req.body, {
-      where: { id: req.params.id },
-    });
+    const { id } = req.params;
 
-    if (!updated) {
+    const hospitalisation = await Hospitalisation.findByPk(id);
+    if (!hospitalisation) {
       return res.status(404).json({ message: "Hospitalisation introuvable" });
     }
 
-    const hospitalisation = await Hospitalisation.findByPk(req.params.id);
+    await hospitalisation.update(req.body);
     res.json(hospitalisation);
   } catch (error) {
     console.error("❌ updateHospitalisation:", error);
@@ -97,26 +108,22 @@ exports.updateHospitalisation = async (req, res) => {
 };
 
 /**
- * 🔄 Changer le statut d'une hospitalisation
+ * 🔄 Changer statut hospitalisation
  */
 exports.changerStatutHospitalisation = async (req, res) => {
   try {
+    const { id } = req.params;
     const { statut } = req.body;
 
-    if (!statut) {
-      return res.status(400).json({ message: "Statut requis" });
-    }
-
-    const [updated] = await Hospitalisation.update(
-      { statut },
-      { where: { id: req.params.id } }
-    );
-
-    if (!updated) {
+    const hospitalisation = await Hospitalisation.findByPk(id);
+    if (!hospitalisation) {
       return res.status(404).json({ message: "Hospitalisation introuvable" });
     }
 
-    res.json({ message: "Statut mis à jour avec succès" });
+    hospitalisation.statut = statut;
+    await hospitalisation.save();
+
+    res.json(hospitalisation);
   } catch (error) {
     console.error("❌ changerStatutHospitalisation:", error);
     res.status(500).json({ message: "Erreur changement statut" });
@@ -124,19 +131,19 @@ exports.changerStatutHospitalisation = async (req, res) => {
 };
 
 /**
- * ❌ Supprimer une hospitalisation
+ * ❌ Supprimer hospitalisation
  */
 exports.deleteHospitalisation = async (req, res) => {
   try {
-    const deleted = await Hospitalisation.destroy({
-      where: { id: req.params.id },
-    });
+    const { id } = req.params;
 
-    if (!deleted) {
+    const hospitalisation = await Hospitalisation.findByPk(id);
+    if (!hospitalisation) {
       return res.status(404).json({ message: "Hospitalisation introuvable" });
     }
 
-    res.json({ message: "Hospitalisation supprimée" });
+    await hospitalisation.destroy();
+    res.json({ message: "Hospitalisation supprimée avec succès" });
   } catch (error) {
     console.error("❌ deleteHospitalisation:", error);
     res.status(500).json({ message: "Erreur suppression hospitalisation" });
@@ -149,15 +156,18 @@ exports.deleteHospitalisation = async (req, res) => {
 exports.getHospitalisationDashboard = async (req, res) => {
   try {
     const total = await Hospitalisation.count();
-    const admise = await Hospitalisation.count({ where: { statut: "admise" } });
-    const enCours = await Hospitalisation.count({ where: { statut: "en_cours" } });
-    const cloturee = await Hospitalisation.count({ where: { statut: "cloturee" } });
+
+    const parStatut = await Hospitalisation.findAll({
+      attributes: [
+        "statut",
+        [Sequelize.fn("COUNT", Sequelize.col("id")), "total"],
+      ],
+      group: ["statut"],
+    });
 
     res.json({
       total,
-      admise,
-      enCours,
-      cloturee,
+      parStatut,
     });
   } catch (error) {
     console.error("❌ getHospitalisationDashboard:", error);
