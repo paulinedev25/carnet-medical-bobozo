@@ -41,12 +41,17 @@ export default function HospitalisationPage() {
     setLoading(true);
     try {
       const res = await getHospitalisations({ statut, page, limit: rowsPerPage });
-      const items = Array.isArray(res?.rows)
-        ? res.rows
-        : Array.isArray(res)
-        ? res
-        : [];
-      setRows(items);
+      const items = Array.isArray(res?.rows) ? res.rows : Array.isArray(res) ? res : [];
+
+      // ✅ Normalisation patients, medecins et infirmiers
+      const normalized = items.map((h) => ({
+        ...h,
+        patient: h.patient || { nom: "-", postnom: "", prenom: "" },
+        medecin: h.medecin || { noms: "-" },
+        infirmier: h.infirmier || { noms: "-" },
+      }));
+
+      setRows(normalized);
     } catch (err) {
       console.error("Erreur chargement hospitalisations:", err);
       toast.error("Impossible de charger les hospitalisations ❌");
@@ -56,7 +61,7 @@ export default function HospitalisationPage() {
     }
   }, [token, statut, page]);
 
-  // 🔄 Charger dashboard (BRUT backend)
+  // 🔄 Charger dashboard (backend brut)
   const loadDashboard = useCallback(async () => {
     if (!token) return;
     try {
@@ -72,15 +77,9 @@ export default function HospitalisationPage() {
   useEffect(() => { loadData(); }, [loadData]);
   useEffect(() => { loadDashboard(); }, [loadDashboard]);
 
-  // ✅ Normalisation dashboard (ANTI crash)
+  // ✅ Normalisation dashboard
   const dashboardStats = useMemo(() => {
-    const stats = {
-      total: dashboard?.total || 0,
-      admises: 0,
-      enCours: 0,
-      cloturees: 0,
-    };
-
+    const stats = { total: dashboard?.total || 0, admises: 0, enCours: 0, cloturees: 0 };
     if (Array.isArray(dashboard?.parStatut)) {
       dashboard.parStatut.forEach((s) => {
         if (s.statut === "admise") stats.admises = Number(s.total) || 0;
@@ -88,7 +87,6 @@ export default function HospitalisationPage() {
         if (s.statut === "cloturee") stats.cloturees = Number(s.total) || 0;
       });
     }
-
     return stats;
   }, [dashboard]);
 
@@ -146,13 +144,11 @@ export default function HospitalisationPage() {
 
   // 🔄 Changer statut
   const handleChangerStatut = async (h) => {
-    const next =
-      h.statut === "admise"
-        ? "en_cours"
-        : h.statut === "en_cours"
-        ? "cloturee"
-        : "admise";
-
+    const next = h.statut === "admise"
+      ? "en_cours"
+      : h.statut === "en_cours"
+      ? "cloturee"
+      : "admise";
     try {
       await changerStatutHospitalisation(h.id, { statut: next });
       toast.success(`Statut changé en ${labelStatut(next)}`);
@@ -231,9 +227,7 @@ export default function HospitalisationPage() {
               setHospitalisationToEdit(null);
               setOpenModal(true);
             }}
-            className={`px-3 py-2 rounded text-white ${
-              saving ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
-            }`}
+            className={`px-3 py-2 rounded text-white ${saving ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"}`}
           >
             {saving ? "..." : "+ Nouvelle"}
           </button>
@@ -244,15 +238,9 @@ export default function HospitalisationPage() {
       {dashboard && (
         <div className="mb-4 flex gap-4 text-sm">
           <div className="bg-gray-100 rounded p-2">📦 Total: {dashboardStats.total}</div>
-          <div className="bg-blue-100 rounded p-2 text-blue-700">
-            Admis: {dashboardStats.admises}
-          </div>
-          <div className="bg-yellow-100 rounded p-2 text-yellow-700">
-            En cours: {dashboardStats.enCours}
-          </div>
-          <div className="bg-green-100 rounded p-2 text-green-700">
-            Clôturées: {dashboardStats.cloturees}
-          </div>
+          <div className="bg-blue-100 rounded p-2 text-blue-700">Admis: {dashboardStats.admises}</div>
+          <div className="bg-yellow-100 rounded p-2 text-yellow-700">En cours: {dashboardStats.enCours}</div>
+          <div className="bg-green-100 rounded p-2 text-green-700">Clôturées: {dashboardStats.cloturees}</div>
         </div>
       )}
 
@@ -260,21 +248,15 @@ export default function HospitalisationPage() {
       <div className="bg-white rounded shadow overflow-x-auto">
         <table className="min-w-full text-sm">
           <thead className="bg-gray-50">
-            <tr>
-              {columns.map((c) => (
-                <th key={c} className="px-4 py-2 text-left">{c}</th>
-              ))}
-            </tr>
+            <tr>{columns.map((c) => <th key={c} className="px-4 py-2 text-left">{c}</th>)}</tr>
           </thead>
           <tbody>
             {paginatedRows.map((h, idx) => (
               <tr key={h.id} className="border-t hover:bg-gray-50">
                 <td className="px-4 py-2">{(page - 1) * rowsPerPage + idx + 1}</td>
-                <td className="px-4 py-2">
-                  {h.patient?.nom} {h.patient?.postnom || ""} {h.patient?.prenom}
-                </td>
-                <td className="px-4 py-2">{h.medecin?.noms || "-"}</td>
-                <td className="px-4 py-2">{h.infirmier?.noms || "-"}</td>
+                <td className="px-4 py-2">{h.patient.nom} {h.patient.postnom || ""} {h.patient.prenom}</td>
+                <td className="px-4 py-2">{h.medecin.noms}</td>
+                <td className="px-4 py-2">{h.infirmier.noms}</td>
                 <td className="px-4 py-2">{formatDate(h.date_entree)}</td>
                 <td className="px-4 py-2">
                   <span
@@ -294,22 +276,16 @@ export default function HospitalisationPage() {
                   <button
                     onClick={() => { setSelected(h); setOpenDetails(true); }}
                     className="px-2 py-1 rounded border hover:bg-gray-100"
-                  >
-                    👁️
-                  </button>
+                  >👁️</button>
                   <button
                     onClick={() => { setHospitalisationToEdit(h); setOpenModal(true); }}
                     className="px-2 py-1 rounded border hover:bg-yellow-100"
-                  >
-                    ✏️
-                  </button>
+                  >✏️</button>
                   {user?.role === "admin" && (
                     <button
                       onClick={() => handleDelete(h.id)}
                       className="px-2 py-1 rounded border hover:bg-red-100"
-                    >
-                      🗑️
-                    </button>
+                    >🗑️</button>
                   )}
                 </td>
               </tr>
@@ -332,17 +308,13 @@ export default function HospitalisationPage() {
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
             className="px-3 py-1 rounded border bg-gray-100 disabled:opacity-50"
-          >
-            ⬅️ Précédent
-          </button>
+          >⬅️ Précédent</button>
           <span>Page {page} / {totalPages}</span>
           <button
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page === totalPages}
             className="px-3 py-1 rounded border bg-gray-100 disabled:opacity-50"
-          >
-            Suivant ➡️
-          </button>
+          >Suivant ➡️</button>
         </div>
       )}
 

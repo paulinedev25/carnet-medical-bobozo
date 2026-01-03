@@ -31,19 +31,16 @@ export default function HospitalisationModal({ open, onClose, onSave, hospitalis
         const ptsRes = await getPatients(token);
         const usrRes = await getUsers(token);
 
-        console.log("📥 getPatients response:", ptsRes);
-        console.log("📥 getUsers response:", usrRes);
-
-        const pts = Array.isArray(ptsRes)
+        const pts = Array.isArray(ptsRes?.patients)
+          ? ptsRes.patients
+          : Array.isArray(ptsRes)
           ? ptsRes
-          : Array.isArray(ptsRes.rows)
-          ? ptsRes.rows
           : [];
 
-        const usrs = Array.isArray(usrRes)
-          ? usrRes
-          : Array.isArray(usrRes.rows)
+        const usrs = Array.isArray(usrRes?.rows)
           ? usrRes.rows
+          : Array.isArray(usrRes)
+          ? usrRes
           : [];
 
         setPatients(pts);
@@ -109,13 +106,8 @@ export default function HospitalisationModal({ open, onClose, onSave, hospitalis
 
   if (!open) return null;
 
-  const medecins = Array.isArray(users)
-    ? users.filter((u) => u.role === "medecin")
-    : [];
-
-  const infirmiers = Array.isArray(users)
-    ? users.filter((u) => u.role === "infirmier")
-    : [];
+  const medecins = Array.isArray(users) ? users.filter((u) => u.role === "medecin") : [];
+  const infirmiers = Array.isArray(users) ? users.filter((u) => u.role === "infirmier") : [];
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
@@ -135,7 +127,7 @@ export default function HospitalisationModal({ open, onClose, onSave, hospitalis
             >
               <option value="">-- Choisir --</option>
               {patients.map((p) => (
-                <option key={p.id || p._id} value={p.id || p._id}>
+                <option key={p.id} value={p.id}>
                   {p.nom} {p.postnom || ""} {p.prenom}
                 </option>
               ))}
@@ -152,7 +144,7 @@ export default function HospitalisationModal({ open, onClose, onSave, hospitalis
             >
               <option value="">-- Choisir --</option>
               {medecins.map((m) => (
-                <option key={m.id || m._id} value={m.id || m._id}>
+                <option key={m.id} value={m.id}>
                   {m.noms}
                 </option>
               ))}
@@ -169,7 +161,7 @@ export default function HospitalisationModal({ open, onClose, onSave, hospitalis
             >
               <option value="">-- Choisir --</option>
               {infirmiers.map((i) => (
-                <option key={i.id || i._id} value={i.id || i._id}>
+                <option key={i.id} value={i.id}>
                   {i.noms}
                 </option>
               ))}
