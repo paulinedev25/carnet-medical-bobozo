@@ -2,11 +2,8 @@ import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { getPatients } from "../../api/patients";
 import { getUsers } from "../../api/users";
-import { useAuth } from "../../auth/AuthContext";
 
 export default function HospitalisationModal({ open, onClose, onSave, hospitalisation }) {
-  const { token } = useAuth();
-
   const [patientId, setPatientId] = useState("");
   const [medecinId, setMedecinId] = useState("");
   const [infirmierId, setInfirmierId] = useState("");
@@ -23,12 +20,12 @@ export default function HospitalisationModal({ open, onClose, onSave, hospitalis
 
   // 🔄 Charger patients et utilisateurs
   useEffect(() => {
-    if (!token || !open) return;
+    if (!open) return;
 
     (async () => {
       try {
-        const ptsRes = await getPatients(token);
-        const usrRes = await getUsers(token);
+        const ptsRes = await getPatients();
+        const usrRes = await getUsers();
 
         const pts = Array.isArray(ptsRes?.rows)
           ? ptsRes.rows
@@ -46,12 +43,12 @@ export default function HospitalisationModal({ open, onClose, onSave, hospitalis
         setUsers(usrs);
       } catch (err) {
         console.error("❌ Erreur chargement patients/utilisateurs:", err);
-        toast.error("Impossible de charger patients/médecins/infirmiers ❌");
+        toast.error("Impossible de charger patients / médecins / infirmiers ❌");
         setPatients([]);
         setUsers([]);
       }
     })();
-  }, [token, open]);
+  }, [open]);
 
   // ✏️ Pré-remplissage si édition
   useEffect(() => {
@@ -105,13 +102,8 @@ export default function HospitalisationModal({ open, onClose, onSave, hospitalis
 
   if (!open) return null;
 
-  const medecins = Array.isArray(users)
-    ? users.filter((u) => u.role === "medecin")
-    : [];
-
-  const infirmiers = Array.isArray(users)
-    ? users.filter((u) => u.role === "infirmier")
-    : [];
+  const medecins = users.filter((u) => u.role === "medecin");
+  const infirmiers = users.filter((u) => u.role === "infirmier");
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
