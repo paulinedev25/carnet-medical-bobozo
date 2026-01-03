@@ -1,9 +1,13 @@
+// src/components/hospitalisations/HospitalisationModal.jsx
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { getPatients } from "../../api/patients";
 import { getUsers } from "../../api/users";
+import { useAuth } from "../../auth/AuthContext";
 
 export default function HospitalisationModal({ open, onClose, onSave, hospitalisation }) {
+  const { token } = useAuth();
+
   const [patientId, setPatientId] = useState("");
   const [medecinId, setMedecinId] = useState("");
   const [infirmierId, setInfirmierId] = useState("");
@@ -20,35 +24,38 @@ export default function HospitalisationModal({ open, onClose, onSave, hospitalis
 
   // 🔄 Charger patients et utilisateurs
   useEffect(() => {
-    if (!open) return;
+    if (!token || !open) return;
 
     (async () => {
       try {
-        const ptsRes = await getPatients();
-        const usrRes = await getUsers();
+        const ptsRes = await getPatients(token);
+        const usrRes = await getUsers(token);
 
-        const pts = Array.isArray(ptsRes?.rows)
-          ? ptsRes.rows
-          : Array.isArray(ptsRes)
+        console.log("📥 getPatients response:", ptsRes);
+        console.log("📥 getUsers response:", usrRes);
+
+        const pts = Array.isArray(ptsRes)
           ? ptsRes
+          : Array.isArray(ptsRes.rows)
+          ? ptsRes.rows
           : [];
 
-        const usrs = Array.isArray(usrRes?.rows)
-          ? usrRes.rows
-          : Array.isArray(usrRes)
+        const usrs = Array.isArray(usrRes)
           ? usrRes
+          : Array.isArray(usrRes.rows)
+          ? usrRes.rows
           : [];
 
         setPatients(pts);
         setUsers(usrs);
       } catch (err) {
         console.error("❌ Erreur chargement patients/utilisateurs:", err);
-        toast.error("Impossible de charger patients / médecins / infirmiers ❌");
+        toast.error("Impossible de charger patients/médecins/infirmiers ❌");
         setPatients([]);
         setUsers([]);
       }
     })();
-  }, [open]);
+  }, [token, open]);
 
   // ✏️ Pré-remplissage si édition
   useEffect(() => {
@@ -102,8 +109,13 @@ export default function HospitalisationModal({ open, onClose, onSave, hospitalis
 
   if (!open) return null;
 
-  const medecins = users.filter((u) => u.role === "medecin");
-  const infirmiers = users.filter((u) => u.role === "infirmier");
+  const medecins = Array.isArray(users)
+    ? users.filter((u) => u.role === "medecin")
+    : [];
+
+  const infirmiers = Array.isArray(users)
+    ? users.filter((u) => u.role === "infirmier")
+    : [];
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
@@ -123,7 +135,7 @@ export default function HospitalisationModal({ open, onClose, onSave, hospitalis
             >
               <option value="">-- Choisir --</option>
               {patients.map((p) => (
-                <option key={p.id} value={p.id}>
+                <option key={p.id || p._id} value={p.id || p._id}>
                   {p.nom} {p.postnom || ""} {p.prenom}
                 </option>
               ))}
@@ -140,7 +152,7 @@ export default function HospitalisationModal({ open, onClose, onSave, hospitalis
             >
               <option value="">-- Choisir --</option>
               {medecins.map((m) => (
-                <option key={m.id} value={m.id}>
+                <option key={m.id || m._id} value={m.id || m._id}>
                   {m.noms}
                 </option>
               ))}
@@ -157,7 +169,7 @@ export default function HospitalisationModal({ open, onClose, onSave, hospitalis
             >
               <option value="">-- Choisir --</option>
               {infirmiers.map((i) => (
-                <option key={i.id} value={i.id}>
+                <option key={i.id || i._id} value={i.id || i._id}>
                   {i.noms}
                 </option>
               ))}
