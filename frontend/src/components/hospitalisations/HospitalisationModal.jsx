@@ -1,4 +1,3 @@
-// src/components/hospitalisations/HospitalisationModal.jsx
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { getPatients } from "../../api/patients";
@@ -22,35 +21,51 @@ export default function HospitalisationModal({ open, onClose, onSave, hospitalis
   const [patients, setPatients] = useState([]);
   const [users, setUsers] = useState([]);
 
-  // Charger patients et utilisateurs
+  // 🔄 Charger patients et utilisateurs
   useEffect(() => {
     if (!token || !open) return;
+
     (async () => {
       try {
-        const pts = await getPatients(token);
-        const usrs = await getUsers(token);
-        setPatients(pts || []);
-        setUsers(usrs || []);
+        const ptsRes = await getPatients(token);
+        const usrRes = await getUsers(token);
+
+        const pts = Array.isArray(ptsRes?.rows)
+          ? ptsRes.rows
+          : Array.isArray(ptsRes)
+          ? ptsRes
+          : [];
+
+        const usrs = Array.isArray(usrRes?.rows)
+          ? usrRes.rows
+          : Array.isArray(usrRes)
+          ? usrRes
+          : [];
+
+        setPatients(pts);
+        setUsers(usrs);
       } catch (err) {
         console.error("❌ Erreur chargement patients/utilisateurs:", err);
         toast.error("Impossible de charger patients/médecins/infirmiers ❌");
+        setPatients([]);
+        setUsers([]);
       }
     })();
   }, [token, open]);
 
-  // Pré-remplissage si édition
+  // ✏️ Pré-remplissage si édition
   useEffect(() => {
     if (hospitalisation) {
-      setPatientId(hospitalisation.patient_id || "");
-      setMedecinId(hospitalisation.medecin_id || "");
-      setInfirmierId(hospitalisation.infirmier_id || "");
-      setDateEntree(hospitalisation.date_entree || "");
-      setDateSortie(hospitalisation.date_sortie || "");
-      setService(hospitalisation.service || "");
-      setDiagnostic(hospitalisation.diagnostic_admission || "");
-      setTraitement(hospitalisation.traitement || "");
-      setObservations(hospitalisation.observations || "");
-      setStatut(hospitalisation.statut || "admise");
+      setPatientId(hospitalisation.patient_id ?? "");
+      setMedecinId(hospitalisation.medecin_id ?? "");
+      setInfirmierId(hospitalisation.infirmier_id ?? "");
+      setDateEntree(hospitalisation.date_entree ?? "");
+      setDateSortie(hospitalisation.date_sortie ?? "");
+      setService(hospitalisation.service ?? "");
+      setDiagnostic(hospitalisation.diagnostic_admission ?? "");
+      setTraitement(hospitalisation.traitement ?? "");
+      setObservations(hospitalisation.observations ?? "");
+      setStatut(hospitalisation.statut ?? "admise");
     } else {
       setPatientId("");
       setMedecinId("");
@@ -72,9 +87,9 @@ export default function HospitalisationModal({ open, onClose, onSave, hospitalis
     }
 
     const payload = {
-      patient_id: patientId,
-      medecin_id: medecinId,
-      infirmier_id: infirmierId || null,
+      patient_id: Number(patientId),
+      medecin_id: Number(medecinId),
+      infirmier_id: infirmierId ? Number(infirmierId) : null,
       date_entree: dateEntree,
       date_sortie: dateSortie || null,
       service,
@@ -90,8 +105,13 @@ export default function HospitalisationModal({ open, onClose, onSave, hospitalis
 
   if (!open) return null;
 
-  const medecins = users.filter((u) => u.role === "medecin");
-  const infirmiers = users.filter((u) => u.role === "infirmier");
+  const medecins = Array.isArray(users)
+    ? users.filter((u) => u.role === "medecin")
+    : [];
+
+  const infirmiers = Array.isArray(users)
+    ? users.filter((u) => u.role === "infirmier")
+    : [];
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
@@ -162,6 +182,7 @@ export default function HospitalisationModal({ open, onClose, onSave, hospitalis
               className="border rounded w-full px-3 py-2"
             />
           </div>
+
           <div>
             <label className="block text-sm">Date sortie</label>
             <input

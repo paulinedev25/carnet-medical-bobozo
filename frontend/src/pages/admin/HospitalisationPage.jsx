@@ -47,7 +47,6 @@ export default function HospitalisationPage() {
         ? res
         : [];
       setRows(items);
-      console.debug("Hospitalisations chargées:", items);
     } catch (err) {
       console.error("Erreur chargement hospitalisations:", err);
       toast.error("Impossible de charger les hospitalisations ❌");
@@ -57,29 +56,41 @@ export default function HospitalisationPage() {
     }
   }, [token, statut, page]);
 
-  // 🔄 Charger dashboard
+  // 🔄 Charger dashboard (BRUT backend)
   const loadDashboard = useCallback(async () => {
     if (!token) return;
     try {
       const data = await getHospitalisationDashboard();
-      const stats = {
-        total: data.total,
-        admise: 0,
-        en_cours: 0,
-        cloturee: 0,
-      };
-      data.parStatut.forEach((s) => {
-        stats[s.statut] = parseInt(s.total, 10);
-      });
-      setDashboard(stats);
+      setDashboard(data);
     } catch (err) {
       console.error("Erreur dashboard:", err);
       toast.error("Impossible de charger le dashboard ❌");
+      setDashboard(null);
     }
   }, [token]);
 
   useEffect(() => { loadData(); }, [loadData]);
   useEffect(() => { loadDashboard(); }, [loadDashboard]);
+
+  // ✅ Normalisation dashboard (ANTI crash)
+  const dashboardStats = useMemo(() => {
+    const stats = {
+      total: dashboard?.total || 0,
+      admises: 0,
+      enCours: 0,
+      cloturees: 0,
+    };
+
+    if (Array.isArray(dashboard?.parStatut)) {
+      dashboard.parStatut.forEach((s) => {
+        if (s.statut === "admise") stats.admises = Number(s.total) || 0;
+        if (s.statut === "en_cours") stats.enCours = Number(s.total) || 0;
+        if (s.statut === "cloturee") stats.cloturees = Number(s.total) || 0;
+      });
+    }
+
+    return stats;
+  }, [dashboard]);
 
   // Colonnes tableau
   const columns = useMemo(
@@ -89,13 +100,14 @@ export default function HospitalisationPage() {
 
   // 🔍 Filtrage
   const filteredRows = rows.filter((h) => {
-    const searchLower = (search || "").toLowerCase();
+    const s = (search || "").toLowerCase();
     const matchesSearch =
-      !searchLower ||
-      (h.patient?.nom || "").toLowerCase().includes(searchLower) ||
-      (h.patient?.prenom || "").toLowerCase().includes(searchLower) ||
-      (h.medecin?.noms || "").toLowerCase().includes(searchLower) ||
-      (h.infirmier?.noms || "").toLowerCase().includes(searchLower);
+      !s ||
+      (h.patient?.nom || "").toLowerCase().includes(s) ||
+      (h.patient?.prenom || "").toLowerCase().includes(s) ||
+      (h.medecin?.noms || "").toLowerCase().includes(s) ||
+      (h.infirmier?.noms || "").toLowerCase().includes(s);
+
     const matchesStatut = statut ? h.statut === statut : true;
     return matchesSearch && matchesStatut;
   });
@@ -107,34 +119,43 @@ export default function HospitalisationPage() {
     return filteredRows.slice(start, start + rowsPerPage);
   }, [filteredRows, page]);
 
-  // 📅 Formatage date
+  // 📅 Format date
   const formatDate = (d) => {
     if (!d) return "-";
     try {
       return new Date(d).toLocaleString("fr-FR", {
-        year: "numeric", month: "short", day: "numeric",
-        hour: "2-digit", minute: "2-digit",
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
       });
-    } catch { return d; }
+    } catch {
+      return d;
+    }
   };
 
   // 🏷️ Label statut
   const labelStatut = (s) => {
     if (!s) return "-";
-    switch (s) {
-      case "admise": return "Admise";
-      case "en_cours": return "En cours";
-      case "cloturee": return "Clôturée";
-      default: return s;
-    }
+    if (s === "admise") return "Admise";
+    if (s === "en_cours") return "En cours";
+    if (s === "cloturee") return "Clôturée";
+    return s;
   };
 
-  // 🔄 Changer statut directement
+  // 🔄 Changer statut
   const handleChangerStatut = async (h) => {
-    const nextStatut = h.statut === "admise" ? "en_cours" : h.statut === "en_cours" ? "cloturee" : "admise";
+    const next =
+      h.statut === "admise"
+        ? "en_cours"
+        : h.statut === "en_cours"
+        ? "cloturee"
+        : "admise";
+
     try {
-      await changerStatutHospitalisation(h.id, { statut: nextStatut });
-      toast.success(`Statut changé en ${labelStatut(nextStatut)}`);
+      await changerStatutHospitalisation(h.id, { statut: next });
+      toast.success(`Statut changé en ${labelStatut(next)}`);
       await loadData();
       await loadDashboard();
     } catch (err) {
@@ -160,8 +181,10 @@ export default function HospitalisationPage() {
       await loadDashboard();
     } catch (err) {
       console.error("Erreur save hospitalisation:", err);
-      toast.error(err?.message || "❌ Échec sauvegarde hospitalisation");
-    } finally { setSaving(false); }
+      toast.error("❌ Échec sauvegarde");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDelete = async (id) => {
@@ -175,7 +198,9 @@ export default function HospitalisationPage() {
     } catch (err) {
       console.error("Erreur suppression:", err);
       toast.error("❌ Échec suppression");
-    } finally { setSaving(false); }
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -190,7 +215,11 @@ export default function HospitalisationPage() {
             placeholder="🔍 Rechercher patient / médecin / infirmier"
             className="border rounded px-3 py-2"
           />
-          <select value={statut} onChange={(e) => setStatut(e.target.value)} className="border rounded px-3 py-2">
+          <select
+            value={statut}
+            onChange={(e) => setStatut(e.target.value)}
+            className="border rounded px-3 py-2"
+          >
             <option value="">Tous statuts</option>
             <option value="admise">Admise</option>
             <option value="en_cours">En cours</option>
@@ -198,8 +227,13 @@ export default function HospitalisationPage() {
           </select>
           <button
             disabled={saving}
-            onClick={() => { setHospitalisationToEdit(null); setOpenModal(true); }}
-            className={`px-3 py-2 rounded text-white ${saving ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"}`}
+            onClick={() => {
+              setHospitalisationToEdit(null);
+              setOpenModal(true);
+            }}
+            className={`px-3 py-2 rounded text-white ${
+              saving ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
+            }`}
           >
             {saving ? "..." : "+ Nouvelle"}
           </button>
@@ -209,10 +243,16 @@ export default function HospitalisationPage() {
       {/* Dashboard */}
       {dashboard && (
         <div className="mb-4 flex gap-4 text-sm">
-          <div className="bg-gray-100 rounded p-2">📦 Total: {dashboard.total}</div>
-          <div className="bg-blue-100 rounded p-2 text-blue-700">Admis: {dashboard.admise}</div>
-          <div className="bg-yellow-100 rounded p-2 text-yellow-700">En cours: {dashboard.en_cours}</div>
-          <div className="bg-green-100 rounded p-2 text-green-700">Clôturées: {dashboard.cloturee}</div>
+          <div className="bg-gray-100 rounded p-2">📦 Total: {dashboardStats.total}</div>
+          <div className="bg-blue-100 rounded p-2 text-blue-700">
+            Admis: {dashboardStats.admises}
+          </div>
+          <div className="bg-yellow-100 rounded p-2 text-yellow-700">
+            En cours: {dashboardStats.enCours}
+          </div>
+          <div className="bg-green-100 rounded p-2 text-green-700">
+            Clôturées: {dashboardStats.cloturees}
+          </div>
         </div>
       )}
 
@@ -220,37 +260,65 @@ export default function HospitalisationPage() {
       <div className="bg-white rounded shadow overflow-x-auto">
         <table className="min-w-full text-sm">
           <thead className="bg-gray-50">
-            <tr>{columns.map(c => <th key={c} className="px-4 py-2 text-left">{c}</th>)}</tr>
+            <tr>
+              {columns.map((c) => (
+                <th key={c} className="px-4 py-2 text-left">{c}</th>
+              ))}
+            </tr>
           </thead>
           <tbody>
             {paginatedRows.map((h, idx) => (
               <tr key={h.id} className="border-t hover:bg-gray-50">
                 <td className="px-4 py-2">{(page - 1) * rowsPerPage + idx + 1}</td>
-                <td className="px-4 py-2">{h.patient?.nom} {h.patient?.postnom || ""} {h.patient?.prenom}</td>
+                <td className="px-4 py-2">
+                  {h.patient?.nom} {h.patient?.postnom || ""} {h.patient?.prenom}
+                </td>
                 <td className="px-4 py-2">{h.medecin?.noms || "-"}</td>
                 <td className="px-4 py-2">{h.infirmier?.noms || "-"}</td>
                 <td className="px-4 py-2">{formatDate(h.date_entree)}</td>
                 <td className="px-4 py-2">
                   <span
-                    className={`px-2 py-1 rounded text-xs font-semibold cursor-pointer
-                      ${h.statut === "admise" ? "bg-blue-100 text-blue-700"
-                        : h.statut === "en_cours" ? "bg-yellow-100 text-yellow-700"
-                        : "bg-green-100 text-green-700"}`}
                     onClick={() => handleChangerStatut(h)}
+                    className={`px-2 py-1 rounded text-xs font-semibold cursor-pointer ${
+                      h.statut === "admise"
+                        ? "bg-blue-100 text-blue-700"
+                        : h.statut === "en_cours"
+                        ? "bg-yellow-100 text-yellow-700"
+                        : "bg-green-100 text-green-700"
+                    }`}
                   >
                     {labelStatut(h.statut)}
                   </span>
                 </td>
                 <td className="px-4 py-2 flex gap-2">
-                  <button onClick={() => { setSelected(h); setOpenDetails(true); }} className="px-2 py-1 rounded border hover:bg-gray-100" title="Voir détails">👁️</button>
-                  <button onClick={() => { setHospitalisationToEdit(h); setOpenModal(true); }} className="px-2 py-1 rounded border hover:bg-yellow-100" title="Modifier">✏️</button>
-                  {user?.role === "admin" && <button onClick={() => handleDelete(h.id)} className="px-2 py-1 rounded border hover:bg-red-100" title="Supprimer">🗑️</button>}
+                  <button
+                    onClick={() => { setSelected(h); setOpenDetails(true); }}
+                    className="px-2 py-1 rounded border hover:bg-gray-100"
+                  >
+                    👁️
+                  </button>
+                  <button
+                    onClick={() => { setHospitalisationToEdit(h); setOpenModal(true); }}
+                    className="px-2 py-1 rounded border hover:bg-yellow-100"
+                  >
+                    ✏️
+                  </button>
+                  {user?.role === "admin" && (
+                    <button
+                      onClick={() => handleDelete(h.id)}
+                      className="px-2 py-1 rounded border hover:bg-red-100"
+                    >
+                      🗑️
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
             {!loading && paginatedRows.length === 0 && (
               <tr>
-                <td colSpan={columns.length} className="text-center py-6 text-gray-500">Aucun enregistrement</td>
+                <td colSpan={columns.length} className="text-center py-6 text-gray-500">
+                  Aucun enregistrement
+                </td>
               </tr>
             )}
           </tbody>
@@ -260,9 +328,21 @@ export default function HospitalisationPage() {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-center items-center gap-3 mt-4">
-          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-3 py-1 rounded border bg-gray-100 hover:bg-gray-200 disabled:opacity-50">⬅️ Précédent</button>
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="px-3 py-1 rounded border bg-gray-100 disabled:opacity-50"
+          >
+            ⬅️ Précédent
+          </button>
           <span>Page {page} / {totalPages}</span>
-          <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="px-3 py-1 rounded border bg-gray-100 hover:bg-gray-200 disabled:opacity-50">Suivant ➡️</button>
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className="px-3 py-1 rounded border bg-gray-100 disabled:opacity-50"
+          >
+            Suivant ➡️
+          </button>
         </div>
       )}
 
