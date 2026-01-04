@@ -10,6 +10,7 @@ const sequelize = require("./config/db");
 // Routes
 const routes = require("./routes/index");
 const resultatExamenRoutes = require("./routes/resultatExamen.routes");
+const carnetMedicalRoutes = require("./routes/carnetMedical.routes");
 
 const app = express();
 
@@ -45,6 +46,7 @@ app.use(morgan("dev"));
 // 🌐 Routes principales
 app.use("/api", routes);
 app.use("/api/resultats-examens", resultatExamenRoutes);
+app.use("/api/carnet-medical", carnetMedicalRoutes);
 
 // ✅ Route test Render
 app.get("/", (req, res) =>

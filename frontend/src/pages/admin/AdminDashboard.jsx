@@ -53,6 +53,10 @@ export default function AdminDashboard() {
               <SidebarLink to="prescriptions">📑 Prescriptions</SidebarLink>
             </li>
 
+            <SidebarLink to={`/admin/carnet/${patient.id}`}>
+              📖 Carnet médical
+            </SidebarLink>
+
             <li>
               <SidebarLink to="rapports">📊 Rapports SNIS</SidebarLink>
             </li>
