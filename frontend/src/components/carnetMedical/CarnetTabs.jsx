@@ -1,62 +1,53 @@
+// src/components/carnetMedical/CarnetTabs.jsx
 import { useState } from "react";
 
 import ConsultationsSection from "./sections/ConsultationsSection";
 import ExamensSection from "./sections/ExamensSection";
-import PrescriptionsSection from "./sections/PrescriptionsSection";
-import HospitalisationsSection from "./sections/HospitalisationsSection";
 import SoinsInfirmiersSection from "./sections/SoinsInfirmiersSection";
-import RendezVousSection from "./sections/RendezVousSection";
-
-const TABS = [
-  { key: "consultations", label: "Consultations" },
-  { key: "examens", label: "Examens" },
-  { key: "prescriptions", label: "Prescriptions" },
-  { key: "hospitalisations", label: "Hospitalisations" },
-  { key: "soins", label: "Soins infirmiers" },
-  { key: "rendezvous", label: "Rendez-vous" },
-];
+import PrescriptionsSection from "./sections/PrescriptionsSection";
 
 export default function CarnetTabs({ carnet }) {
-  const [active, setActive] = useState("consultations");
+  const [activeTab, setActiveTab] = useState("consultations");
+
+  const tabs = [
+    { key: "consultations", label: "Consultations" },
+    { key: "examens", label: "Examens" },
+    { key: "soins", label: "Soins infirmiers" },
+    { key: "prescriptions", label: "Prescriptions" },
+  ];
 
   return (
-    <div className="bg-white rounded shadow">
-      {/* Tabs */}
-      <div className="flex border-b">
-        {TABS.map((t) => (
+    <div>
+      {/* Onglets */}
+      <div className="flex border-b mb-4">
+        {tabs.map((tab) => (
           <button
-            key={t.key}
-            onClick={() => setActive(t.key)}
-            className={`px-4 py-2 text-sm ${
-              active === t.key
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`px-4 py-2 font-semibold ${
+              activeTab === tab.key
                 ? "border-b-2 border-blue-600 text-blue-600"
-                : "text-gray-600"
+                : "text-gray-600 hover:text-blue-600"
             }`}
           >
-            {t.label}
+            {tab.label}
           </button>
         ))}
       </div>
 
-      {/* Content */}
-      <div className="p-4">
-        {active === "consultations" && (
-          <ConsultationsSection data={carnet.consultations} />
+      {/* Contenu onglet actif */}
+      <div className="space-y-4">
+        {activeTab === "consultations" && (
+          <ConsultationsSection consultations={carnet.consultations || []} />
         )}
-        {active === "examens" && (
-          <ExamensSection data={carnet.examens} />
+        {activeTab === "examens" && (
+          <ExamensSection examens={carnet.examens || []} />
         )}
-        {active === "prescriptions" && (
-          <PrescriptionsSection data={carnet.prescriptions} />
+        {activeTab === "soins" && (
+          <SoinsInfirmiersSection soins={carnet.soins_infirmiers || []} />
         )}
-        {active === "hospitalisations" && (
-          <HospitalisationsSection data={carnet.hospitalisations} />
-        )}
-        {active === "soins" && (
-          <SoinsInfirmiersSection data={carnet.soinsInfirmiers} />
-        )}
-        {active === "rendezvous" && (
-          <RendezVousSection data={carnet.rendezVous} />
+        {activeTab === "prescriptions" && (
+          <PrescriptionsSection prescriptions={carnet.prescriptions || []} />
         )}
       </div>
     </div>
