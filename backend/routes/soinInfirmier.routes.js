@@ -3,7 +3,7 @@ const express = require("express");
 const router = express.Router();
 
 const soinController = require("../controllers/soinInfirmier.controller");
-const auth = require("../middleware/auth.middleware");
+const auth = require("../middlewares/auth.middleware");
 
 /**
  * 🔐 Toutes les routes nécessitent une authentification
