@@ -46,7 +46,6 @@ app.use(morgan("dev"));
 // 🌐 Routes principales
 app.use("/api", routes);
 app.use("/api/resultats-examens", resultatExamenRoutes);
-app.use("/api/carnet-medical", carnetMedicalRoutes);
 
 // ✅ Route test Render
 app.get("/", (req, res) =>

@@ -15,6 +15,14 @@ export default function PharmacienDashboard() {
             🚚 Livraison Prescriptions
           </NavLink>
         </nav>
+
+        <button
+          onClick={logoutUser}
+          className="m-4 bg-red-600 hover:bg-red-700 p-2 rounded"
+        >
+          Déconnexion
+        </button>
+        
       </aside>
       <main className="flex-1 bg-gray-50 p-6 overflow-y-auto">
         <Outlet />

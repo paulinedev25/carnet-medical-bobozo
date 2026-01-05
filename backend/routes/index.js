@@ -19,6 +19,7 @@ const soinInfirmierRoutes = require("./soinInfirmier.routes");
 const constanteVitaleRoutes = require("./constanteVitale.routes");
 const chefServiceRoutes = require("./chefService.routes")
 const adminRoutes = require("./admin.routes");
+const carnetMedicalRoutes = require("./carnetMedical.routes");
 
 // 🌐 Montage des routes sous le préfixe /api
 router.use("/auth", authRoutes);
@@ -38,5 +39,6 @@ router.use("/soins-infirmiers", soinInfirmierRoutes);
 router.use("/constantes-vitales", constanteVitaleRoutes);
 router.use("/chef-service", chefServiceRoutes);
 router.use("/admin", adminRoutes);
+router.use("/carnet-medical", carnetMedicalRoutes);
 
 module.exports = router;

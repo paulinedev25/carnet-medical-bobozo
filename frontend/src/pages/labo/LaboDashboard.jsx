@@ -13,6 +13,13 @@ export default function LaboDashboard() {
           <NavLink to="examens" className="block p-2 rounded hover:bg-yellow-600">🧪 Examens</NavLink>
         </nav>
         <button onClick={logoutUser} className="m-4 bg-red-600 p-2 rounded hover:bg-red-700">Déconnexion</button>
+      <button
+          onClick={logoutUser}
+          className="m-4 bg-red-600 hover:bg-red-700 p-2 rounded"
+        >
+          Déconnexion
+        </button>
+        
       </aside>
       <main className="flex-1 bg-gray-50 p-6">
         <h1 className="text-xl font-semibold mb-4">Bienvenue {user?.noms}</h1>
