@@ -1,7 +1,6 @@
+// src/components/carnetMedical/PatientHeader.jsx
 export default function PatientHeader({ patient }) {
-  if (!patient) {
-    return null;
-  }
+  if (!patient) return null;
 
   return (
     <div className="bg-white rounded shadow p-4">
@@ -10,11 +9,11 @@ export default function PatientHeader({ patient }) {
       </h2>
 
       <p className="text-gray-600">
-        Sexe : {patient.sexe} | Né(e) le : {patient.date_naissance}
+        Sexe : {patient.sexe || "-"} | Né(e) le : {patient.date_naissance || "-"}
       </p>
 
       <p className="text-gray-600">
-        N° dossier : <b>{patient.numero_dossier}</b>
+        N° dossier : <b>{patient.numero_dossier || "-"}</b>
       </p>
     </div>
   );

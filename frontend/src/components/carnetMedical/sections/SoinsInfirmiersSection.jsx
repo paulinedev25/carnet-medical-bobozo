@@ -1,18 +1,13 @@
+// src/components/carnetMedical/sections/SoinsInfirmiersSection.jsx
 import React from "react";
 
-export default function SoinsInfirmiersSection({ soins }) {
+export default function SoinsInfirmiersSection({ data = [] }) {
   if (!Array.isArray(data) || data.length === 0) {
-    return (
-      <div className="text-center text-gray-500 py-6">
-        Aucun soin infirmier enregistré.
-      </div>
-    );
+    return <div className="text-center text-gray-500 py-6">Aucun soin infirmier enregistré.</div>;
   }
 
   // Tri par date décroissante
-  const sorted = [...data].sort(
-    (a, b) => new Date(b.date_soin) - new Date(a.date_soin)
-  );
+  const sorted = [...data].sort((a, b) => new Date(b.date_soin) - new Date(a.date_soin));
 
   const formatDate = (d) => {
     if (!d) return "-";
@@ -50,10 +45,7 @@ export default function SoinsInfirmiersSection({ soins }) {
   return (
     <div className="space-y-4">
       {sorted.map((soin) => (
-        <div
-          key={soin.id}
-          className="border rounded p-3 bg-gray-50 shadow-sm"
-        >
+        <div key={soin.id} className="border rounded p-3 bg-gray-50 shadow-sm">
           <div className="flex justify-between items-center mb-1">
             <span className="font-semibold">{soin.type_soin}</span>
             <span className={`px-2 py-1 rounded text-xs font-semibold ${colorStatut(soin.statut_validation)}`}>
@@ -64,16 +56,12 @@ export default function SoinsInfirmiersSection({ soins }) {
           <div className="text-sm text-gray-600 mb-1">
             <div>🗓️ Date : {formatDate(soin.date_soin)}</div>
             <div>👩‍⚕️ Infirmier : {soin.infirmier?.noms || "-"}</div>
-            {soin.medecin && (
-              <div>🧑‍⚕️ Médecin : {soin.medecin?.noms}</div>
-            )}
+            {soin.medecin && <div>🧑‍⚕️ Médecin : {soin.medecin?.noms || "-"}</div>}
           </div>
 
           <div className="text-sm text-gray-800">
             <div>💬 Observations : {soin.observations || "-"}</div>
-            {soin.remarque_medecin && (
-              <div>📝 Remarque médecin : {soin.remarque_medecin}</div>
-            )}
+            {soin.remarque_medecin && <div>📝 Remarque médecin : {soin.remarque_medecin}</div>}
           </div>
         </div>
       ))}

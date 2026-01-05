@@ -1,51 +1,45 @@
-// src/pages/carnetMedical/CarnetMedicalPage.jsx
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 
 import { getCarnetMedical } from "../../api/carnetMedical";
-
 import PatientHeader from "../../components/carnetMedical/PatientHeader";
 import CarnetTabs from "../../components/carnetMedical/CarnetTabs";
 
 export default function CarnetMedicalPage() {
   const { patientId } = useParams();
-
-  const [data, setData] = useState(null);
+  const [carnet, setCarnet] = useState(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!patientId) return;
 
-    const load = async () => {
+    const loadCarnet = async () => {
       setLoading(true);
       try {
         const res = await getCarnetMedical(patientId);
-        setData(res);
+        // La réponse doit être { patient, hospitalisations, consultations, soins_infirmiers, examens }
+        setCarnet(res);
       } catch (err) {
         console.error(err);
         toast.error("❌ Impossible de charger le carnet médical");
-        setData(null);
+        setCarnet(null);
       } finally {
         setLoading(false);
       }
     };
 
-    load();
+    loadCarnet();
   }, [patientId]);
 
-  if (loading) {
-    return <div className="p-6">Chargement du carnet médical...</div>;
-  }
-
-  if (!data || !data.patient) {
+  if (loading) return <div className="p-6">Chargement du carnet médical...</div>;
+  if (!carnet || !carnet.patient)
     return <div className="p-6 text-red-500">Aucune donnée disponible</div>;
-  }
 
   return (
     <div className="p-6 space-y-4">
-      <PatientHeader patient={data.patient} />
-      <CarnetTabs carnet={data} />
+      <PatientHeader patient={carnet.patient} />
+      <CarnetTabs carnet={carnet} />
     </div>
   );
 }

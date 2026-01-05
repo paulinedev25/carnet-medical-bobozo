@@ -10,10 +10,10 @@ export default function CarnetTabs({ carnet }) {
   if (!carnet || !patient) return <div>Aucune donnée disponible</div>;
 
   const tabs = [
-    { name: "Hospitalisations", component: <HospitalisationsSection hospitalisations={carnet.hospitalisations} /> },
-    { name: "Consultations", component: <ConsultationsSection consultations={carnet.consultations} /> },
-    { name: "Soins infirmiers", component: <SoinsInfirmiersSection data={carnet.soins_infirmiers} /> },
-    { name: "Examens", component: <ExamensSection examens={carnet.examens} /> },
+    { name: "Hospitalisations", component: <HospitalisationsSection hospitalisations={carnet.hospitalisations || []} /> },
+    { name: "Consultations", component: <ConsultationsSection consultations={carnet.consultations || []} /> },
+    { name: "Soins infirmiers", component: <SoinsInfirmiersSection data={carnet.soins_infirmiers || []} /> },
+    { name: "Examens", component: <ExamensSection examens={carnet.examens || []} /> },
   ];
 
   const [activeTab, setActiveTab] = useState(tabs[0].name);

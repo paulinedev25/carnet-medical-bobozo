@@ -2,16 +2,18 @@ import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
 
 const SidebarLink = ({ to, children }) => (
-  <NavLink
-    to={to}
-    className={({ isActive }) =>
-      `block p-2 rounded flex items-center gap-2 ${
-        isActive ? "bg-blue-600" : "hover:bg-blue-600"
-      }`
-    }
-  >
-    {children}
-  </NavLink>
+  <li>
+    <NavLink
+      to={to}
+      className={({ isActive }) =>
+        `block p-2 rounded flex items-center gap-2 ${
+          isActive ? "bg-blue-600" : "hover:bg-blue-600"
+        }`
+      }
+    >
+      {children}
+    </NavLink>
+  </li>
 );
 
 export default function AdminDashboard() {
@@ -27,45 +29,15 @@ export default function AdminDashboard() {
 
         <nav className="flex-1 p-4">
           <ul className="space-y-2">
-            <li>
-              <SidebarLink to="patients">🧑‍⚕️ Patients</SidebarLink>
-            </li>
-            <li>
-              <SidebarLink to="consultations">📋 Consultations</SidebarLink>
-            </li>
-
-            {/* Examens */}
-            <li>
-              <SidebarLink to="examens">🧪 Examens</SidebarLink>
-            </li>
-
-            <li>
-              <SidebarLink to="hospitalisations">🏥 Hospitalisations</SidebarLink>
-            </li>
-
-            {/* Médicaments */}
-            <li>
-              <SidebarLink to="medicaments">💊 Médicaments</SidebarLink>
-            </li>
-
-            {/* ✅ NOUVEAU LIEN PRESCRIPTIONS */}
-            <li>
-              <SidebarLink to="prescriptions">📑 Prescriptions</SidebarLink>
-            </li>
-
-            <SidebarLink to={`/admin/carnet/${patient.id}`}>
-              📖 Carnet médical
-            </SidebarLink>
-
-            <li>
-              <SidebarLink to="rapports">📊 Rapports SNIS</SidebarLink>
-            </li>
-            <li>
-              <SidebarLink to="users">👥 Gestion des utilisateurs</SidebarLink>
-            </li>
-            <li>
-              <SidebarLink to="settings">⚙️ Paramètres</SidebarLink>
-            </li>
+            <SidebarLink to="patients">🧑‍⚕️ Patients</SidebarLink>
+            <SidebarLink to="consultations">📋 Consultations</SidebarLink>
+            <SidebarLink to="examens">🧪 Examens</SidebarLink>
+            <SidebarLink to="hospitalisations">🏥 Hospitalisations</SidebarLink>
+            <SidebarLink to="medicaments">💊 Médicaments</SidebarLink>
+            <SidebarLink to="prescriptions">📑 Prescriptions</SidebarLink>
+            <SidebarLink to="rapports">📊 Rapports SNIS</SidebarLink>
+            <SidebarLink to="users">👥 Gestion des utilisateurs</SidebarLink>
+            <SidebarLink to="settings">⚙️ Paramètres</SidebarLink>
           </ul>
         </nav>
 
