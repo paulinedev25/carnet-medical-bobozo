@@ -1,43 +1,61 @@
-const CarnetMedicalService = require("../services/carnetMedical.service");
+const Patient = require("../models/Patient");
+const Consultation = require("../models/Consultation");
+const Examen = require("../models/Examen");
+const Hospitalisation = require("../models/Hospitalisation");
+const SoinInfirmier = require("../models/SoinInfirmier");
 
-class CarnetMedicalController {
-  /**
-   * 📘 Récupérer le carnet médical complet d’un patient
-   * GET /api/carnet-medical/:patientId
-   */
-  static async getCarnetMedical(req, res) {
-    try {
-      const { patientId } = req.params;
+exports.getCarnetMedical = async (req, res) => {
+  console.log("📥 getCarnetMedical appelé");
 
-      // 🔒 Validation simple
-      if (!patientId || isNaN(patientId)) {
-        return res.status(400).json({
-          message: "ID patient invalide",
-        });
-      }
+  try {
+    const { patientId } = req.params;
+    console.log("➡️ patientId =", patientId);
 
-      const carnet = await CarnetMedicalService.getCarnetMedical(
-        Number(patientId)
-      );
+    // 1️⃣ PATIENT (OBLIGATOIRE)
+    const patient = await Patient.findByPk(patientId);
+    console.log("✅ patient trouvé ?", !!patient);
 
-      return res.status(200).json(carnet);
-    } catch (error) {
-      console.error("❌ Erreur CarnetMedicalController:", error);
-
-      // Cas métier connu
-      if (error.message === "Patient introuvable") {
-        return res.status(404).json({
-          message: error.message,
-        });
-      }
-
-      // Erreur inconnue
-      return res.status(500).json({
-        message: "Erreur lors de la récupération du carnet médical",
-        error: error.message,
-      });
+    if (!patient) {
+      return res.status(404).json({ message: "Patient introuvable" });
     }
-  }
-}
 
-module.exports = CarnetMedicalController;
+    // 2️⃣ CONSULTATIONS
+    const consultations = await Consultation.findAll({
+      where: { patient_id: patientId },
+    });
+    console.log("✅ consultations:", consultations.length);
+
+    // 3️⃣ EXAMENS
+    const examens = await Examen.findAll({
+      where: { patient_id: patientId },
+    });
+    console.log("✅ examens:", examens.length);
+
+    // 4️⃣ HOSPITALISATIONS
+    const hospitalisations = await Hospitalisation.findAll({
+      where: { patient_id: patientId },
+    });
+    console.log("✅ hospitalisations:", hospitalisations.length);
+
+    // 5️⃣ SOINS INFIRMIERS
+    const soins_infirmiers = await SoinInfirmier.findAll({
+      where: { patient_id: patientId },
+    });
+    console.log("✅ soins:", soins_infirmiers.length);
+
+    // 🔚 RÉPONSE FINALE
+    return res.json({
+      patient,
+      consultations,
+      examens,
+      hospitalisations,
+      soins_infirmiers,
+    });
+  } catch (error) {
+    console.error("❌ ERREUR carnet médical:", error);
+    return res.status(500).json({
+      message: "Erreur chargement carnet médical",
+      error: error.message,
+    });
+  }
+};
