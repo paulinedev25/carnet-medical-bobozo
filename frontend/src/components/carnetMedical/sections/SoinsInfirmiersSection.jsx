@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function SoinsInfirmiersSection({ data }) {
+export default function SoinsInfirmiersSection({ soins }) {
   if (!Array.isArray(data) || data.length === 0) {
     return (
       <div className="text-center text-gray-500 py-6">

@@ -12,7 +12,7 @@ export default function CarnetTabs({ carnet }) {
   const tabs = [
     { name: "Hospitalisations", component: <HospitalisationsSection hospitalisations={carnet.hospitalisations} /> },
     { name: "Consultations", component: <ConsultationsSection consultations={carnet.consultations} /> },
-    { name: "Soins infirmiers", component: <SoinsInfirmiersSection soins={carnet.soins_infirmiers} /> },
+    { name: "Soins infirmiers", component: <SoinsInfirmiersSection data={carnet.soins_infirmiers} /> },
     { name: "Examens", component: <ExamensSection examens={carnet.examens} /> },
   ];
 
