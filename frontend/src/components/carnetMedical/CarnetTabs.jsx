@@ -1,54 +1,43 @@
 // src/components/carnetMedical/CarnetTabs.jsx
 import { useState } from "react";
-
+import SoinsInfirmiersSection from "./sections/SoinsInfirmiersSection";
+import HospitalisationsSection from "./sections/HospitalisationsSection";
 import ConsultationsSection from "./sections/ConsultationsSection";
 import ExamensSection from "./sections/ExamensSection";
-import SoinsInfirmiersSection from "./sections/SoinsInfirmiersSection";
-import PrescriptionsSection from "./sections/PrescriptionsSection";
 
 export default function CarnetTabs({ carnet }) {
-  const [activeTab, setActiveTab] = useState("consultations");
+  const patient = carnet?.patient;
+  if (!carnet || !patient) return <div>Aucune donnée disponible</div>;
 
   const tabs = [
-    { key: "consultations", label: "Consultations" },
-    { key: "examens", label: "Examens" },
-    { key: "soins", label: "Soins infirmiers" },
-    { key: "prescriptions", label: "Prescriptions" },
+    { name: "Hospitalisations", component: <HospitalisationsSection hospitalisations={carnet.hospitalisations} /> },
+    { name: "Consultations", component: <ConsultationsSection consultations={carnet.consultations} /> },
+    { name: "Soins infirmiers", component: <SoinsInfirmiersSection soins={carnet.soins_infirmiers} /> },
+    { name: "Examens", component: <ExamensSection examens={carnet.examens} /> },
   ];
+
+  const [activeTab, setActiveTab] = useState(tabs[0].name);
 
   return (
     <div>
-      {/* Onglets */}
-      <div className="flex border-b mb-4">
-        {tabs.map((tab) => (
+      {/* Tabs */}
+      <div className="flex gap-2 border-b mb-4">
+        {tabs.map((t) => (
           <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`px-4 py-2 font-semibold ${
-              activeTab === tab.key
-                ? "border-b-2 border-blue-600 text-blue-600"
-                : "text-gray-600 hover:text-blue-600"
+            key={t.name}
+            onClick={() => setActiveTab(t.name)}
+            className={`px-4 py-2 rounded-t ${
+              t.name === activeTab ? "bg-white border-t border-l border-r border-blue-600 font-semibold" : "bg-gray-100"
             }`}
           >
-            {tab.label}
+            {t.name}
           </button>
         ))}
       </div>
 
-      {/* Contenu onglet actif */}
-      <div className="space-y-4">
-        {activeTab === "consultations" && (
-          <ConsultationsSection consultations={carnet.consultations || []} />
-        )}
-        {activeTab === "examens" && (
-          <ExamensSection examens={carnet.examens || []} />
-        )}
-        {activeTab === "soins" && (
-          <SoinsInfirmiersSection soins={carnet.soins_infirmiers || []} />
-        )}
-        {activeTab === "prescriptions" && (
-          <PrescriptionsSection prescriptions={carnet.prescriptions || []} />
-        )}
+      {/* Contenu actif */}
+      <div className="bg-white p-4 rounded shadow">
+        {tabs.find((t) => t.name === activeTab)?.component}
       </div>
     </div>
   );

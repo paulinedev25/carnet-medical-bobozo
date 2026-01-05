@@ -1,3 +1,4 @@
+// src/pages/carnetMedical/CarnetMedicalPage.jsx
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -37,7 +38,7 @@ export default function CarnetMedicalPage() {
     return <div className="p-6">Chargement du carnet médical...</div>;
   }
 
-  if (!data) {
+  if (!data || !data.patient) {
     return <div className="p-6 text-red-500">Aucune donnée disponible</div>;
   }
 

@@ -1,19 +1,14 @@
+// src/components/carnetMedical/PatientHeader.jsx
 export default function PatientHeader({ patient }) {
-  if (!patient) return null;
+  if (!patient) return null; // ✅ sécurité si patient undefined
 
   return (
-    <div className="bg-white rounded shadow p-4">
-      <h2 className="text-lg font-semibold">
-        🧑‍⚕️ {patient.nom} {patient.postnom || ""} {patient.prenom}
-      </h2>
-
-      <div className="text-sm text-gray-600 grid grid-cols-2 gap-2 mt-2">
-        <div>📁 Dossier : {patient.numero_dossier}</div>
-        <div>📞 Téléphone : {patient.telephone || "-"}</div>
-        <div>⚥ Sexe : {patient.sexe}</div>
-        <div>🎂 Naissance : {patient.date_naissance}</div>
-        <div>🏠 Adresse : {patient.adresse}</div>
-        <div>🧾 Matricule : {patient.matricule}</div>
+    <div className="bg-white rounded p-4 shadow flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+      <div className="text-lg font-semibold">
+        {patient.nom} {patient.postnom || ""} {patient.prenom}
+      </div>
+      <div className="text-sm text-gray-500">
+        Dossier: {patient.numero_dossier || "-"} | Grade: {patient.grade || "-"} | Unité: {patient.unite || "-"}
       </div>
     </div>
   );
