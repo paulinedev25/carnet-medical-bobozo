@@ -1,4 +1,3 @@
-// src/components/carnetMedical/CarnetTabs.jsx
 import { useState } from "react";
 import SoinsInfirmiersSection from "./sections/SoinsInfirmiersSection";
 import HospitalisationsSection from "./sections/HospitalisationsSection";
@@ -20,24 +19,17 @@ export default function CarnetTabs({ carnet }) {
 
   return (
     <div>
-      {/* Tabs */}
       <div className="flex gap-2 border-b mb-4">
-        {tabs.map((t) => (
-          <button
-            key={t.name}
-            onClick={() => setActiveTab(t.name)}
-            className={`px-4 py-2 rounded-t ${
-              t.name === activeTab ? "bg-white border-t border-l border-r border-blue-600 font-semibold" : "bg-gray-100"
-            }`}
-          >
+        {tabs.map(t => (
+          <button key={t.name} onClick={() => setActiveTab(t.name)}
+            className={`px-4 py-2 rounded-t ${t.name===activeTab ? "bg-white border-t border-l border-r border-blue-600 font-semibold" : "bg-gray-100"}`}>
             {t.name}
           </button>
         ))}
       </div>
 
-      {/* Contenu actif */}
       <div className="bg-white p-4 rounded shadow">
-        {tabs.find((t) => t.name === activeTab)?.component}
+        {tabs.find(t => t.name===activeTab)?.component}
       </div>
     </div>
   );
