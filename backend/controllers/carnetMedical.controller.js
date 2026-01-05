@@ -1,8 +1,8 @@
-const Patient = require("../models/Patient");
-const Consultation = require("../models/Consultation");
-const Examen = require("../models/Examen");
-const Hospitalisation = require("../models/Hospitalisation");
-const SoinInfirmier = require("../models/SoinInfirmier");
+const Patient = require("../models/patient");
+const Consultation = require("../models/consultation");
+const Examen = require("../models/examen");
+const Hospitalisation = require("../models/hospitalisation");
+const SoinInfirmier = require("../models/soinInfirmier");
 
 exports.getCarnetMedical = async (req, res) => {
   console.log("📥 getCarnetMedical appelé");
