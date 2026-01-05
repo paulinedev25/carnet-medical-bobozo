@@ -16,7 +16,8 @@ import ExamensPage from "./pages/admin/ExamensPage";
 import MedicamentsPage from "./pages/admin/MedicamentsPage";
 import PrescriptionsPage from "./pages/admin/PrescriptionsPage";
 import HospitalisationRouter from "./pages/admin/HospitalisationRouter";
-import CarnetMedicalPage from "./pages/carnetMedical/CarnetMedicalPage";
+import CarnetMedicalPage from "./pages/admin/CarnetMedicalPage";
+
 import ProfilePage from "./pages/ProfilePage";
 
 import { ToastContainer } from "react-toastify";

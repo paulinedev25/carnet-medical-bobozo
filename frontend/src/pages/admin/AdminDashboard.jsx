@@ -35,6 +35,7 @@ export default function AdminDashboard() {
             <SidebarLink to="hospitalisations">🏥 Hospitalisations</SidebarLink>
             <SidebarLink to="medicaments">💊 Médicaments</SidebarLink>
             <SidebarLink to="prescriptions">📑 Prescriptions</SidebarLink>
+            <SidebarLink to={`/dashboard/carnet/${patientId}`}>📖 Carnet médical</SidebarLink>
             <SidebarLink to="rapports">📊 Rapports SNIS</SidebarLink>
             <SidebarLink to="users">👥 Gestion des utilisateurs</SidebarLink>
             <SidebarLink to="settings">⚙️ Paramètres</SidebarLink>
