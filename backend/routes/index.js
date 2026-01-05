@@ -39,9 +39,4 @@ router.use("/constantes-vitales", constanteVitaleRoutes);
 router.use("/chef-service", chefServiceRoutes);
 router.use("/admin", adminRoutes);
 
-// ⚠️ Catch-all pour les routes inexistantes
-router.use("*", (req, res) => {
-  res.status(404).json({ message: "Route non trouvée" });
-});
-
 module.exports = router;
