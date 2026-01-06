@@ -19,14 +19,19 @@ class CarnetMedicalService {
       throw new Error("Patient introuvable");
     }
 
-    // 2️⃣ Hospitalisations (UNIQUEMENT associations EXISTANTES)
+    // 2️⃣ Hospitalisations
     const hospitalisations = await Hospitalisation.findAll({
       where: { patient_id: patientId },
       order: [["date_entree", "DESC"]],
       include: [
         { model: Utilisateur, as: "medecin" },
         { model: Utilisateur, as: "infirmier" },
-        { model: SoinInfirmier, as: "soins" },
+        {
+          model: SoinInfirmier,
+          as: "soins",
+          // 🔹 On ordonne par ID au lieu de created_at
+          order: [["id", "ASC"]],
+        },
         {
           model: Consultation,
           as: "consultations",
@@ -49,7 +54,11 @@ class CarnetMedicalService {
       include: [
         { model: Utilisateur, as: "medecin" },
         { model: Examen, as: "examens" },
-        { model: SoinInfirmier, as: "soins" },
+        {
+          model: SoinInfirmier,
+          as: "soins",
+          order: [["id", "ASC"]], // 🔹 Même correction ici
+        },
         {
           model: Prescription,
           as: "prescriptions",
