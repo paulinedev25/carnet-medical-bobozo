@@ -1,3 +1,5 @@
+"use strict";
+
 const CarnetMedicalService = require("../services/carnetMedical.service");
 
 class CarnetMedicalController {
@@ -9,7 +11,7 @@ class CarnetMedicalController {
     try {
       const { patientId } = req.params;
 
-      // 🔒 Validation simple
+      // 🔒 Validation simple (bloquante uniquement si invalide)
       if (!patientId || isNaN(patientId)) {
         return res.status(400).json({
           message: "ID patient invalide",
