@@ -1,4 +1,3 @@
-// backend/models/soinInfirmier.model.js
 const { Model, DataTypes } = require("sequelize");
 
 class SoinInfirmier extends Model {
@@ -64,10 +63,8 @@ class SoinInfirmier extends Model {
         modelName: "SoinInfirmier",
         tableName: "soins_infirmiers",
 
-        // 🕒 Historique
-        timestamps: true,
-        createdAt: "created_at",
-        updatedAt: "updated_at",
+        // 🕒 Historique → Désactivé pour éviter created_at / updated_at
+        timestamps: false, 
 
         // ⚡ Performances
         indexes: [
