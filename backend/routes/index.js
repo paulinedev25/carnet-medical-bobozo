@@ -17,9 +17,10 @@ const resultatExamenRoutes = require("./resultatExamen.routes");
 const pharmacieRoutes = require("./pharmacie.routes");
 const soinInfirmierRoutes = require("./soinInfirmier.routes");
 const constanteVitaleRoutes = require("./constanteVitale.routes");
-const chefServiceRoutes = require("./chefService.routes")
+const chefServiceRoutes = require("./chefService.routes");
 const adminRoutes = require("./admin.routes");
 const carnetMedicalRoutes = require("./carnetMedical.routes");
+const rendezVousRoutes = require("./rendezVous.routes");
 
 // 🌐 Montage des routes sous le préfixe /api
 router.use("/auth", authRoutes);
@@ -40,5 +41,6 @@ router.use("/constantes-vitales", constanteVitaleRoutes);
 router.use("/chef-service", chefServiceRoutes);
 router.use("/admin", adminRoutes);
 router.use("/carnet-medical", carnetMedicalRoutes);
+router.use("/rendez-vous", rendezVousRoutes);
 
 module.exports = router;
