@@ -6,13 +6,19 @@ import ExamensSection from "./sections/ExamensSection";
 
 export default function CarnetTabs({ carnet }) {
   const patient = carnet?.patient;
-  
+
   // Si pas de carnet ou pas de patient défini
-  if (!carnet || !patient) return <div>Aucune donnée disponible</div>;
+  if (!carnet || !patient) {
+    return (
+      <div className="p-6 text-center text-gray-700">
+        Aucune donnée du carnet médical disponible.
+      </div>
+    );
+  }
 
   // Récupère tous les soins si présents
-  const allSoins = carnet.hospitalisations
-    ? carnet.hospitalisations.flatMap((hosp) => hosp.soins || [])
+  const allSoins = Array.isArray(carnet.hospitalisations)
+    ? carnet.hospitalisations.flatMap((hosp) => hosp?.soins || [])
     : [];
 
   const tabs = [
@@ -21,14 +27,17 @@ export default function CarnetTabs({ carnet }) {
       component: (
         <HospitalisationsSection
           hospitalisations={carnet.hospitalisations || []}
-          patientId={patient.id}
+          patientId={patient?.id} // sécurisé avec optional chaining
         />
       ),
     },
     {
       name: "Consultations",
       component: (
-        <ConsultationsSection consultations={carnet.consultations || []} />
+        <ConsultationsSection
+          consultations={carnet.consultations || []}
+          patientId={patient?.id} // éventuellement utile pour les filtres
+        />
       ),
     },
     {
@@ -36,14 +45,17 @@ export default function CarnetTabs({ carnet }) {
       component: (
         <SoinsInfirmiersSection
           data={allSoins}
-          patientId={patient.id}
+          patientId={patient?.id}
         />
       ),
     },
     {
       name: "Examens",
       component: (
-        <ExamensSection examens={carnet.examens || []} patientId={patient.id} />
+        <ExamensSection
+          examens={carnet.examens || []}
+          patientId={patient?.id}
+        />
       ),
     },
   ];
@@ -72,7 +84,11 @@ export default function CarnetTabs({ carnet }) {
 
       {/* Contenu de l’onglet */}
       <div className="bg-white p-4 rounded shadow min-h-[300px]">
-        {tabs.find((t) => t.name === activeTab)?.component}
+        {tabs.find((t) => t.name === activeTab)?.component || (
+          <div className="text-center text-gray-500">
+            Aucun contenu disponible.
+          </div>
+        )}
       </div>
     </div>
   );

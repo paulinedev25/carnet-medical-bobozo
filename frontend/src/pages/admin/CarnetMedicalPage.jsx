@@ -19,17 +19,17 @@ export default function CarnetMedicalPage() {
 
         console.log("📡 Chargement du carnet médical pour patient:", patientId);
 
-        // Requête API vers ton backend
+        // Requête API vers ton backend pour récupérer le carnet
         const res = await api.get(`/carnet-medical/${patientId}`);
 
-        console.log("✅ Carnet medical reçu:", res.data);
+        console.log("✅ Carnet médical reçu:", res.data);
 
-        setCarnet(res.data);
+        setCarnet(res.data || null);
       } catch (err) {
         console.error("❌ Erreur lors de la récupération du carnet médical:", err);
 
-        // Message clair pour l'utilisateur
-        if (err.response && err.response.data && err.response.data.message) {
+        // Message clair pour l'utilisateur en cas d'erreur API
+        if (err.response?.data?.message) {
           setError(err.response.data.message);
         } else {
           setError("Impossible de charger le carnet médical.");
@@ -47,7 +47,7 @@ export default function CarnetMedicalPage() {
     }
   }, [patientId]);
 
-  // ⏳ Affiche le loading
+  // ⏳ Affiche le loading tant que la requête est en cours
   if (loading) {
     return (
       <div className="p-6 text-center text-lg font-medium">
@@ -65,7 +65,7 @@ export default function CarnetMedicalPage() {
     );
   }
 
-  // 🧾 Si aucune donnée retournée
+  // 🧾 Si aucune donnée retournée ou patient inexistant
   if (!carnet || !carnet.patient) {
     return (
       <div className="p-6 text-center text-gray-700 text-lg">
@@ -76,10 +76,10 @@ export default function CarnetMedicalPage() {
 
   return (
     <div className="p-6 space-y-6">
-      {/* En-tête patient */}
+      {/* En-tête patient (affiche proprement les données sans planter si undefined) */}
       <PatientHeader patient={carnet.patient} />
 
-      {/* Onglets avec contenu détaillé */}
+      {/* Onglets avec contenus (chaque tab doit bien se protéger contre nulls) */}
       <CarnetTabs carnet={carnet} />
     </div>
   );
