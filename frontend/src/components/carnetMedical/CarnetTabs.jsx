@@ -8,6 +8,11 @@ export default function CarnetTabs({ carnet }) {
   const patient = carnet?.patient;
   if (!carnet || !patient) return <div>Aucune donnée disponible</div>;
 
+  // Récupère tous les soins de toutes les hospitalisations en une seule liste
+  const allSoins = carnet.hospitalisations
+    ? carnet.hospitalisations.flatMap((hosp) => hosp.soins || [])
+    : [];
+
   const tabs = [
     {
       name: "Hospitalisations",
@@ -28,7 +33,7 @@ export default function CarnetTabs({ carnet }) {
       name: "Soins infirmiers",
       component: (
         <SoinsInfirmiersSection
-          hospitalisations={carnet.hospitalisations || []}
+          data={allSoins}
           patientId={patient.id}
         />
       ),
