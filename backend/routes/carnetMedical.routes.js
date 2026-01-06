@@ -6,7 +6,7 @@ const authMiddleware = require("../middlewares/auth.middleware");
 
 router.get(
   "/:patientId",
-  authMiddleware,
+  authMiddleware(), // ✅ FIX CRITIQUE
   CarnetMedicalController.getCarnetMedical
 );
 

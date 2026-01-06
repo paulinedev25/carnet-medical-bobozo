@@ -20,17 +20,19 @@ const allowedOrigins = [
   "http://localhost:3000",
 ];
 
-// 🔐 CORS (UNE SEULE FOIS, BIEN CONFIGURÉ)
+// 🔐 CORS (robuste + compatible navigateur)
 app.use(
   cors({
     origin: (origin, callback) => {
+      // Autorise Postman / Render healthcheck / SSR
       if (!origin) return callback(null, true);
 
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
 
-      return callback(new Error("Not allowed by CORS"));
+      // ❗ Refus contrôlé (mais CORS toujours présent)
+      return callback(null, false);
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -38,14 +40,20 @@ app.use(
   })
 );
 
+// 🔁 Preflight obligatoire
+app.options("*", cors());
+
 // 🔧 Middlewares globaux
 app.use(express.json());
 app.use(helmet());
 app.use(morgan("dev"));
 
-// 🌐 Routes principales
+// 🌐 Routes API
 app.use("/api", routes);
 app.use("/api/resultats-examens", resultatExamenRoutes);
+
+// ✅ 🔥 ROUTE MANQUANTE (CAUSE DU BUG)
+app.use("/api/carnet-medical", carnetMedicalRoutes);
 
 // ✅ Route test Render
 app.get("/", (req, res) =>
@@ -61,6 +69,7 @@ app.use((err, req, res, next) => {
   });
 });
 
+// ❌ 404 final
 app.use((req, res) => {
   res.status(404).json({ message: "Route non trouvée" });
 });
