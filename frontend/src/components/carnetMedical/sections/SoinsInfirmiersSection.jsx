@@ -2,12 +2,21 @@ import React, { useState, useMemo } from "react";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 
+// Import du modal et du formulaire si existants
+import Modal from "../ui/Modal";
+import SoinsInfirmiersForm from "../SoinsInfirmiersForm";
+import api from "../../../services/api"; 
+import { toast } from "react-toastify";
+
 export default function SoinsInfirmiersSection({ data = [], patientId }) {
   const [search, setSearch] = useState("");
   const [statutFilter, setStatutFilter] = useState("");
   const [infirmierFilter, setInfirmierFilter] = useState("");
   const [dateStart, setDateStart] = useState("");
   const [dateEnd, setDateEnd] = useState("");
+
+  const [openModal, setOpenModal] = useState(false);
+  const [editingSoin, setEditingSoin] = useState(null);
 
   // 📌 Filtrer les soins
   const filteredSoins = useMemo(() => {
@@ -50,7 +59,7 @@ export default function SoinsInfirmiersSection({ data = [], patientId }) {
     }
   };
 
-  // 📄 Export PDF 👍
+  // 📄 Export PDF
   const exportPDF = () => {
     const doc = new jsPDF();
     doc.text("Soins infirmiers - Patient #" + patientId, 14, 20);
@@ -68,15 +77,54 @@ export default function SoinsInfirmiersSection({ data = [], patientId }) {
     doc.save(`soins-infirmiers-patient-${patientId}.pdf`);
   };
 
-  const handleTimeline = () => {
-    // 📌 TODO: générer timeline (UI ou PDF), selon besoins UX
-    window.alert("La fonctionnalité Timeline sera implémentée bientôt");
+  const handleAddClick = () => {
+    setEditingSoin(null);
+    setOpenModal(true);
+  };
+
+  const handleEditClick = (soin) => {
+    setEditingSoin(soin);
+    setOpenModal(true);
+  };
+
+  const handleDelete = async (soin) => {
+    if (!window.confirm("Supprimer ce soin ?")) return;
+    try {
+      await api.delete(`/soins-infirmiers/${soin.id}`);
+      toast.success("🗑️ Soin supprimé");
+      window.location.reload();
+    } catch (err) {
+      toast.error("❌ Erreur suppression");
+    }
+  };
+
+  const handleSave = async (formData) => {
+    try {
+      if (editingSoin?.id) {
+        await api.put(`/soins-infirmiers/${editingSoin.id}`, formData);
+        toast.success("✅ Soin mis à jour !");
+      } else {
+        await api.post("/soins-infirmiers", { ...formData, patient_id: patientId });
+        toast.success("🎉 Soin ajouté !");
+      }
+      setOpenModal(false);
+      window.location.reload();
+    } catch (err) {
+      toast.error("❌ Erreur lors de l’enregistrement");
+    }
   };
 
   return (
     <div className="space-y-4">
-      {/* 🔎 Filtres */}
-      <div className="flex flex-wrap gap-2 mb-4">
+      {/* 🔎 Filtres + Bouton Ajouter */}
+      <div className="flex flex-wrap gap-2 mb-4 items-center">
+        <button
+          onClick={handleAddClick}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
+          + Ajouter un soin
+        </button>
+
         <input
           type="text"
           placeholder="🔍 Rechercher par type soin"
@@ -123,13 +171,6 @@ export default function SoinsInfirmiersSection({ data = [], patientId }) {
         >
           📄 Exporter PDF
         </button>
-
-        <button
-          onClick={handleTimeline}
-          className="bg-blue-600 text-white px-3 py-2 rounded"
-        >
-          📊 Voir Timeline
-        </button>
       </div>
 
       {/* 📋 Liste des soins */}
@@ -165,10 +206,17 @@ export default function SoinsInfirmiersSection({ data = [], patientId }) {
 
               {/* 🔧 Boutons d’action */}
               <div className="flex gap-2 text-sm">
-                <button className="px-2 py-1 border rounded hover:bg-gray-100">
+                <button
+                  onClick={() => handleEditClick(soin)}
+                  className="px-2 py-1 border rounded hover:bg-gray-100"
+                >
                   ✏️ Modifier
                 </button>
-                <button className="px-2 py-1 border text-red-600 rounded hover:bg-gray-100">
+
+                <button
+                  onClick={() => handleDelete(soin)}
+                  className="px-2 py-1 border text-red-600 rounded hover:bg-gray-100"
+                >
                   🗑️ Supprimer
                 </button>
               </div>
@@ -176,6 +224,21 @@ export default function SoinsInfirmiersSection({ data = [], patientId }) {
           ))}
         </div>
       )}
+
+      {/* Modal de création / modification */}
+      <Modal
+        isOpen={openModal}
+        onClose={() => setOpenModal(false)}
+        title={editingSoin ? "Modifier Soin infirmier" : "Ajouter Soin infirmier"}
+      >
+        <SoinsInfirmiersForm
+          initialData={editingSoin}
+          onSave={handleSave}
+          onCancel={() => setOpenModal(false)}
+          infirmiers={[]} /* tu peux précharger si nécessaire */
+          medecins={[]}
+        />
+      </Modal>
     </div>
   );
 }
