@@ -1,6 +1,6 @@
 import { useState } from "react";
 import Modal from "../../ui/Modal"; // ou adaptes selon ton arborescence
-import HospitalisationForm from "../hospitalisations/HospitalisationForm";
+import HospitalisationForm from "../CarnetMedical/HospitalisationForm";
 import api from "../../../services/api";
 import { toast } from "react-toastify";
 
