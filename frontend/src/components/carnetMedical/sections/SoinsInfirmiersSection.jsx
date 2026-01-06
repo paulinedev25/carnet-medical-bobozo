@@ -3,7 +3,7 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 
 // Import du modal et du formulaire si existants
-import Modal from "../ui/Modal";
+import Modal from "../../ui/Modal";
 import SoinsInfirmiersForm from "../SoinsInfirmiersForm";
 import api from "../../../services/api"; 
 import { toast } from "react-toastify";
