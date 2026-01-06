@@ -69,6 +69,7 @@ export default function App() {
             <Route path="hospitalisations/*" element={<HospitalisationRouter />} />
             <Route path="medicaments" element={<MedicamentsPage />} />
             <Route path="prescriptions" element={<PrescriptionsPage />} />
+            <Route path="soins-infirmiers" element={<SoinsInfirmiersPage />} />
 
             {/* Carnet Médical (Dynamic with patientId) */}
             <Route path="carnet/:patientId" element={<CarnetMedicalPage />}>

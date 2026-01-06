@@ -6,9 +6,11 @@ import ExamensSection from "./sections/ExamensSection";
 
 export default function CarnetTabs({ carnet }) {
   const patient = carnet?.patient;
+  
+  // Si pas de carnet ou pas de patient défini
   if (!carnet || !patient) return <div>Aucune donnée disponible</div>;
 
-  // Récupère tous les soins de toutes les hospitalisations en une seule liste
+  // Récupère tous les soins si présents
   const allSoins = carnet.hospitalisations
     ? carnet.hospitalisations.flatMap((hosp) => hosp.soins || [])
     : [];
@@ -56,11 +58,12 @@ export default function CarnetTabs({ carnet }) {
           <button
             key={t.name}
             onClick={() => setActiveTab(t.name)}
-            className={`px-4 py-2 whitespace-nowrap font-medium rounded-t ${
-              t.name === activeTab
-                ? "bg-white border-t border-l border-r border-blue-600 text-blue-800"
-                : "bg-gray-100 text-gray-800 hover:bg-gray-200"
-            }`}
+            className={`px-4 py-2 whitespace-nowrap font-medium rounded-t 
+              ${
+                t.name === activeTab
+                  ? "bg-white border-t border-l border-r border-blue-600 text-blue-800"
+                  : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+              }`}
           >
             {t.name}
           </button>

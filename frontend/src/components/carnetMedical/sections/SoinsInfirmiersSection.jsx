@@ -1,77 +1,145 @@
-import React, { useState } from "react";
-import SoinsForm from "../forms/SoinsForm";
-import api from "../../../services/api";
+import React, { useState, useMemo } from "react";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 
 export default function SoinsInfirmiersSection({ data = [], patientId }) {
-  const [soins, setSoins] = useState(data);
-  const [editingSoin, setEditingSoin] = useState(null);
-  const [showForm, setShowForm] = useState(false);
+  const [search, setSearch] = useState("");
+  const [statutFilter, setStatutFilter] = useState("");
+  const [infirmierFilter, setInfirmierFilter] = useState("");
+  const [dateStart, setDateStart] = useState("");
+  const [dateEnd, setDateEnd] = useState("");
 
-  // Rafraîchir la liste après création / update / suppression
-  const refreshSoins = async () => {
-    try {
-      const res = await api.get(`/soins-infirmiers/patient/${patientId}`);
-      setSoins(res.data);
-    } catch (err) {
-      console.error("Erreur chargement soins", err);
+  // 📌 Filtrer les soins
+  const filteredSoins = useMemo(() => {
+    return data.filter((s) => {
+      const sujet = s.type_soin?.toLowerCase() || "";
+      const matchesSearch = search ? sujet.includes(search.toLowerCase()) : true;
+      const matchesStatut = statutFilter ? s.statut_validation === statutFilter : true;
+      const matchesInfirmier = infirmierFilter
+        ? s.infirmier?.noms?.toLowerCase()?.includes(infirmierFilter.toLowerCase())
+        : true;
+      const dateS = s.date_soin ? new Date(s.date_soin) : null;
+      const matchesDate =
+        (!dateStart || (dateS && dateS >= new Date(dateStart))) &&
+        (!dateEnd || (dateS && dateS <= new Date(dateEnd)));
+      return matchesSearch && matchesStatut && matchesInfirmier && matchesDate;
+    });
+  }, [data, search, statutFilter, infirmierFilter, dateStart, dateEnd]);
+
+  const formatDate = (d) => {
+    if (!d) return "-";
+    return new Date(d).toLocaleString("fr-FR", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const labelStatut = (s) => {
+    switch (s) {
+      case "en_attente":
+        return "En attente";
+      case "valide":
+        return "Validé";
+      case "rejete":
+        return "Rejeté";
+      default:
+        return s;
     }
   };
 
-  const handleCreate = () => {
-    setEditingSoin(null);
-    setShowForm(true);
+  // 📄 Export PDF 👍
+  const exportPDF = () => {
+    const doc = new jsPDF();
+    doc.text("Soins infirmiers - Patient #" + patientId, 14, 20);
+    autoTable(doc, {
+      startY: 30,
+      head: [["Type", "Infirmier", "Médecin", "Date", "Statut"]],
+      body: filteredSoins.map((s) => [
+        s.type_soin,
+        s.infirmier?.noms || "-",
+        s.medecin?.noms || "-",
+        formatDate(s.date_soin),
+        labelStatut(s.statut_validation),
+      ]),
+    });
+    doc.save(`soins-infirmiers-patient-${patientId}.pdf`);
   };
 
-  const handleEdit = (soin) => {
-    setEditingSoin(soin);
-    setShowForm(true);
-  };
-
-  const handleDelete = async (soin) => {
-    if (!window.confirm("Supprimer ce soin ?")) return;
-    try {
-      await api.delete(`/soins-infirmiers/${soin.id}`);
-      // Retirer de l’état
-      setSoins((prev) => prev.filter((s) => s.id !== soin.id));
-    } catch (err) {
-      console.error("Erreur suppression soin :", err);
-    }
+  const handleTimeline = () => {
+    // 📌 TODO: générer timeline (UI ou PDF), selon besoins UX
+    window.alert("La fonctionnalité Timeline sera implémentée bientôt");
   };
 
   return (
     <div className="space-y-4">
-      {/* Bouton Ajouter */}
-      <div className="flex justify-end">
-        <button
-          onClick={handleCreate}
-          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+      {/* 🔎 Filtres */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        <input
+          type="text"
+          placeholder="🔍 Rechercher par type soin"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="border rounded px-3 py-2"
+        />
+
+        <select
+          value={statutFilter}
+          onChange={(e) => setStatutFilter(e.target.value)}
+          className="border rounded px-3 py-2"
         >
-          + Ajouter un soin
+          <option value="">Tous statuts</option>
+          <option value="en_attente">En attente</option>
+          <option value="valide">Validé</option>
+          <option value="rejete">Rejeté</option>
+        </select>
+
+        <input
+          type="text"
+          placeholder="Filtrer infirmier"
+          value={infirmierFilter}
+          onChange={(e) => setInfirmierFilter(e.target.value)}
+          className="border rounded px-3 py-2"
+        />
+
+        <input
+          type="date"
+          value={dateStart}
+          onChange={(e) => setDateStart(e.target.value)}
+          className="border rounded px-3 py-2"
+        />
+        <input
+          type="date"
+          value={dateEnd}
+          onChange={(e) => setDateEnd(e.target.value)}
+          className="border rounded px-3 py-2"
+        />
+
+        <button
+          onClick={exportPDF}
+          className="bg-green-600 text-white px-3 py-2 rounded"
+        >
+          📄 Exporter PDF
+        </button>
+
+        <button
+          onClick={handleTimeline}
+          className="bg-blue-600 text-white px-3 py-2 rounded"
+        >
+          📊 Voir Timeline
         </button>
       </div>
 
-      {/* Formulaire Modale */}
-      {showForm && (
-        <SoinsForm
-          initialData={editingSoin}
-          onSuccess={() => {
-            setShowForm(false);
-            refreshSoins();
-          }}
-          onCancel={() => setShowForm(false)}
-        />
-      )}
-
-      {/* Message si aucun soin */}
-      {!Array.isArray(soins) || soins.length === 0 ? (
+      {/* 📋 Liste des soins */}
+      {filteredSoins.length === 0 ? (
         <div className="text-center text-gray-500 py-6">
           Aucun soin infirmier enregistré.
         </div>
       ) : (
-        soins
-          // Tri par date décroissante
-          .sort((a, b) => new Date(b.date_soin) - new Date(a.date_soin))
-          .map((soin) => (
+        <div className="space-y-3">
+          {filteredSoins.map((soin) => (
             <div
               key={soin.id}
               className="border rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition"
@@ -80,56 +148,33 @@ export default function SoinsInfirmiersSection({ data = [], patientId }) {
                 <h3 className="text-lg font-semibold text-gray-800">
                   {soin.type_soin || "—"}
                 </h3>
-
-                {/* Boutons d’action */}
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleEdit(soin)}
-                    className="text-blue-600 hover:text-blue-800"
-                  >
-                    ✏️
-                  </button>
-
-                  <button
-                    onClick={() => handleDelete(soin)}
-                    className="text-red-600 hover:text-red-800"
-                  >
-                    🗑️
-                  </button>
-                </div>
+                <span className="text-sm font-semibold text-blue-700">
+                  {labelStatut(soin.statut_validation)}
+                </span>
               </div>
 
-              <div className="text-sm text-gray-700 mb-2">
-                <div>
-                  <strong>🗓️ Date :</strong>{" "}
-                  {new Date(soin.date_soin).toLocaleString("fr-FR")}
-                </div>
-                <div>
-                  <strong>👩‍⚕️ Infirmier :</strong>{" "}
-                  {soin.infirmier?.noms || "-"}
-                </div>
-                {soin.medecin && (
-                  <div>
-                    <strong>🧑‍⚕️ Médecin :</strong>{" "}
-                    {soin.medecin?.noms || "-"}
-                  </div>
-                )}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm text-gray-700 mb-2">
+                <div><strong>Date :</strong> {formatDate(soin.date_soin)}</div>
+                <div><strong>Infirmier :</strong> {soin.infirmier?.noms || "-"}</div>
+                <div><strong>Médecin :</strong> {soin.medecin?.noms || "-"}</div>
               </div>
 
-              <div className="text-sm text-gray-800 space-y-1">
-                <div>
-                  <strong>💬 Observations :</strong>{" "}
-                  {soin.observations || "-"}
-                </div>
-                {soin.remarque_medecin && (
-                  <div>
-                    <strong>📝 Remarque médecin :</strong>{" "}
-                    {soin.remarque_medecin}
-                  </div>
-                )}
+              <div className="text-sm text-gray-800 mb-2">
+                <strong>Observations :</strong> {soin.observations || "-"}
+              </div>
+
+              {/* 🔧 Boutons d’action */}
+              <div className="flex gap-2 text-sm">
+                <button className="px-2 py-1 border rounded hover:bg-gray-100">
+                  ✏️ Modifier
+                </button>
+                <button className="px-2 py-1 border text-red-600 rounded hover:bg-gray-100">
+                  🗑️ Supprimer
+                </button>
               </div>
             </div>
-          ))
+          ))}
+        </div>
       )}
     </div>
   );
