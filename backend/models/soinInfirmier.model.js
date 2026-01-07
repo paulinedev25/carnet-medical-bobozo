@@ -1,72 +1,37 @@
+// backend/models/soinInfirmier.model.js
 const { Model, DataTypes } = require("sequelize");
 
 class SoinInfirmier extends Model {
   static init(sequelize) {
     return super.init(
       {
-        // 🔗 Liens contexte patient
-        hospitalisation_id: {
-          type: DataTypes.INTEGER,
-          allowNull: true,
-        },
-        consultation_id: {
-          type: DataTypes.INTEGER,
-          allowNull: true,
-        },
+        hospitalisation_id: { type: DataTypes.INTEGER, allowNull: true },
+        consultation_id: { type: DataTypes.INTEGER, allowNull: true },
+        infirmier_id: { type: DataTypes.INTEGER, allowNull: false },
+        medecin_id: { type: DataTypes.INTEGER, allowNull: true },
 
-        // 👩‍⚕️ Infirmier responsable
-        infirmier_id: {
-          type: DataTypes.INTEGER,
-          allowNull: false,
-        },
+        // Détails du soin
+        type_soin: { type: DataTypes.STRING(255), allowNull: false },
+        date_soin: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
+        observations: { type: DataTypes.TEXT, allowNull: true },
 
-        // 🩺 Médecin validateur
-        medecin_id: {
-          type: DataTypes.INTEGER,
-          allowNull: true,
-        },
+        // Enrichissements
+        type_traitement: { type: DataTypes.STRING(255), allowNull: true },
+        dose: { type: DataTypes.STRING(50), allowNull: true },
+        frequence: { type: DataTypes.STRING(50), allowNull: true },
+        parametres_vitaux: { type: DataTypes.JSON, allowNull: true },
+        evolution_etat: { type: DataTypes.TEXT, allowNull: true },
+        activites: { type: DataTypes.JSON, allowNull: true },
 
-        // 🧪 Détails du soin
-        type_soin: {
-          type: DataTypes.STRING(255),
-          allowNull: false,
-          validate: {
-            notEmpty: true,
-          },
-        },
-
-        date_soin: {
-          type: DataTypes.DATE,
-          allowNull: false,
-          defaultValue: DataTypes.NOW,
-        },
-
-        observations: {
-          type: DataTypes.TEXT,
-          allowNull: true,
-        },
-
-        // 🔁 Workflow validation
-        statut_validation: {
-          type: DataTypes.ENUM("en_attente", "valide", "rejete"),
-          allowNull: false,
-          defaultValue: "en_attente",
-        },
-
-        remarque_medecin: {
-          type: DataTypes.TEXT,
-          allowNull: true,
-        },
+        // Workflow
+        statut_validation: { type: DataTypes.ENUM("en_attente", "valide", "rejete"), allowNull: false, defaultValue: "en_attente" },
+        remarque_medecin: { type: DataTypes.TEXT, allowNull: true },
       },
       {
         sequelize,
         modelName: "SoinInfirmier",
         tableName: "soins_infirmiers",
-
-        // 🕒 Historique → Désactivé pour éviter created_at / updated_at
-        timestamps: false, 
-
-        // ⚡ Performances
+        timestamps: false,
         indexes: [
           { fields: ["hospitalisation_id"] },
           { fields: ["consultation_id"] },
@@ -75,14 +40,10 @@ class SoinInfirmier extends Model {
           { fields: ["statut_validation"] },
           { fields: ["date_soin"] },
         ],
-
-        // 🛡️ Validation métier
         validate: {
           auMoinsUnContexte() {
             if (!this.hospitalisation_id && !this.consultation_id) {
-              throw new Error(
-                "Un soin doit être lié soit à une hospitalisation soit à une consultation"
-              );
+              throw new Error("Un soin doit être lié à une hospitalisation ou consultation");
             }
           },
         },
@@ -91,29 +52,10 @@ class SoinInfirmier extends Model {
   }
 
   static associate(models) {
-    // 🏥 Hospitalisation
-    this.belongsTo(models.Hospitalisation, {
-      foreignKey: "hospitalisation_id",
-      as: "hospitalisation",
-    });
-
-    // 🏠 Consultation ambulatoire
-    this.belongsTo(models.Consultation, {
-      foreignKey: "consultation_id",
-      as: "consultation",
-    });
-
-    // 👩‍⚕️ Infirmier
-    this.belongsTo(models.Utilisateur, {
-      foreignKey: "infirmier_id",
-      as: "infirmier",
-    });
-
-    // 🧑‍⚕️ Médecin validateur
-    this.belongsTo(models.Utilisateur, {
-      foreignKey: "medecin_id",
-      as: "medecin",
-    });
+    this.belongsTo(models.Hospitalisation, { foreignKey: "hospitalisation_id", as: "hospitalisation" });
+    this.belongsTo(models.Consultation, { foreignKey: "consultation_id", as: "consultation" });
+    this.belongsTo(models.Utilisateur, { foreignKey: "infirmier_id", as: "infirmier" });
+    this.belongsTo(models.Utilisateur, { foreignKey: "medecin_id", as: "medecin" });
   }
 }
 

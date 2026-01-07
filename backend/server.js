@@ -11,6 +11,7 @@ const sequelize = require("./config/db");
 const routes = require("./routes/index");
 const resultatExamenRoutes = require("./routes/resultatExamen.routes");
 const carnetMedicalRoutes = require("./routes/carnetMedical.routes");
+const rendezVousRoutes = require("./routes/rendezVous.routes");
 
 const app = express();
 
@@ -54,6 +55,8 @@ app.use("/api/resultats-examens", resultatExamenRoutes);
 
 // ✅ 🔥 ROUTE MANQUANTE (CAUSE DU BUG)
 app.use("/api/carnet-medical", carnetMedicalRoutes);
+
+app.use("/api/rendez-vous", rendezVousRoutes);
 
 // ✅ Route test Render
 app.get("/", (req, res) =>
