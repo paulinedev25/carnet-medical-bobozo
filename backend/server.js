@@ -7,33 +7,32 @@ const morgan = require("morgan");
 // Connexion DB
 const sequelize = require("./config/db");
 
-// Routes
+// Routes principales
 const routes = require("./routes/index");
+<<<<<<< HEAD
 const resultatExamenRoutes = require("./routes/resultatExamen.routes");
 const carnetMedicalRoutes = require("./routes/carnetMedical.routes");
 const rendezVousRoutes = require("./routes/rendezVous.routes");
+=======
+>>>>>>> ef61371244d90b551ab9b89b868eeaf3074f404c
 
 const app = express();
 
+// 🔒 Origines autorisées pour CORS
 const allowedOrigins = [
   "https://carnet-medical-front.onrender.com",
   "http://localhost:5173",
   "http://localhost:3000",
 ];
 
-// 🔐 CORS (robuste + compatible navigateur)
+// 🔐 Middleware CORS
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Autorise Postman / Render healthcheck / SSR
+      // Requête depuis le serveur ou postman
       if (!origin) return callback(null, true);
-
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
-      // ❗ Refus contrôlé (mais CORS toujours présent)
-      return callback(null, false);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -41,38 +40,29 @@ app.use(
   })
 );
 
-// 🔁 Preflight obligatoire
-app.options("*", cors());
-
 // 🔧 Middlewares globaux
-app.use(express.json());
-app.use(helmet());
-app.use(morgan("dev"));
+app.use(express.json()); // parse JSON
+app.use(helmet());       // sécurisation HTTP headers
+app.use(morgan("dev"));  // logs
 
-// 🌐 Routes API
+// 🌐 Routes principales
 app.use("/api", routes);
-app.use("/api/resultats-examens", resultatExamenRoutes);
-
-// ✅ 🔥 ROUTE MANQUANTE (CAUSE DU BUG)
-app.use("/api/carnet-medical", carnetMedicalRoutes);
 
 app.use("/api/rendez-vous", rendezVousRoutes);
 
 // ✅ Route test Render
-app.get("/", (req, res) =>
-  res.send("Carnet Médical API fonctionne ✅")
-);
+app.get("/", (req, res) => res.send("Carnet Médical API fonctionne ✅"));
 
 // ⚠️ Middleware global d’erreurs
 app.use((err, req, res, next) => {
-  console.error("Erreur globale :", err.message);
+  console.error("❌ Erreur globale :", err.message);
   res.status(500).json({
     message: "Erreur serveur",
     error: err.message,
   });
 });
 
-// ❌ 404 final
+// Middleware 404 pour routes non trouvées
 app.use((req, res) => {
   res.status(404).json({ message: "Route non trouvée" });
 });
@@ -89,7 +79,7 @@ const PORT = process.env.PORT || 5000;
       console.log(`✅ Serveur démarré sur le port ${PORT}`);
     });
   } catch (error) {
-    console.error("❌ Erreur DB :", error.message);
+    console.error("❌ Erreur connexion DB :", error.message);
     process.exit(1);
   }
 })();

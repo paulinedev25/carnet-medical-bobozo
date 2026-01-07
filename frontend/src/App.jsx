@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./auth/AuthContext";
 import PrivateRoute from "./auth/PrivateRoute";
 
@@ -18,6 +18,9 @@ import HospitalisationRouter from "./pages/admin/HospitalisationRouter";
 import CarnetMedicalPage from "./pages/admin/CarnetMedicalPage";
 import ProfilePage from "./pages/ProfilePage";
 
+import SoinsInfirmiersPage from "./pages/soins/SoinsInfirmiersPage";
+import RendezVousPage from "./pages/rendezvous/RendezVousPage";
+
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -28,19 +31,37 @@ export default function App() {
         <ToastContainer position="top-right" autoClose={3000} />
 
         <Routes>
+          {/* Public Routes */}
           <Route path="/" element={<Accueil />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/unauthorized" element={<Unauthorized />} />
 
+          {/* Protected Routes under Dashboard */}
           <Route
             path="/dashboard/*"
             element={
-              <PrivateRoute allowedRoles={["admin","medecin","pharmacien","receptionniste","laborantin","infirmier","secretaire"]}>
+              <PrivateRoute
+                allowedRoles={[
+                  "admin",
+                  "medecin",
+                  "pharmacien",
+                  "receptionniste",
+                  "laborantin",
+                  "infirmier",
+                  "secretaire",
+                ]}
+              >
                 <DashboardRouter />
               </PrivateRoute>
             }
           >
-            <Route index element={<div className="p-6">Bienvenue sur le Carnet Médical</div>} />
+            {/* Dashboard Index */}
+            <Route
+              index
+              element={<div className="p-6">Bienvenue sur le Carnet Médical</div>}
+            />
+
+            {/* Admin & Team Pages */}
             <Route path="patients" element={<PatientsPage />} />
             <Route path="users" element={<UsersPage />} />
             <Route path="consultations" element={<ConsultationsPage />} />
@@ -48,10 +69,30 @@ export default function App() {
             <Route path="hospitalisations/*" element={<HospitalisationRouter />} />
             <Route path="medicaments" element={<MedicamentsPage />} />
             <Route path="prescriptions" element={<PrescriptionsPage />} />
-            <Route path="carnet/:patientId" element={<CarnetMedicalPage />} />
+            <Route path="soins-infirmiers" element={<SoinsInfirmiersPage />} />
+
+            {/* Carnet Médical (Dynamic with patientId) */}
+            <Route path="carnet/:patientId" element={<CarnetMedicalPage />}>
+              {/* Nested sub‑routes inside the Carnet Medical layout */}
+              
+              {/* Soins infirmiers, requires hospitalisationId param */}
+              <Route
+                path="soins/:hospitalisationId"
+                element={<SoinsInfirmiersPage />}
+              />
+
+              {/* Rendez‑vous de suivi ambulatoire */}
+              <Route
+                path="rendezvous"
+                element={<RendezVousPage />}
+              />
+            </Route>
+
+            {/* Profile Page */}
             <Route path="profile" element={<ProfilePage />} />
           </Route>
 
+          {/* Catch All */}
           <Route path="*" element={<Unauthorized />} />
         </Routes>
       </AuthProvider>

@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 // backend/controllers/rendezVous.controller.js
+=======
+>>>>>>> ef61371244d90b551ab9b89b868eeaf3074f404c
 const RendezVousService = require("../services/rendezVous.service");
 
 class RendezVousController {
@@ -7,7 +10,10 @@ class RendezVousController {
       const rdv = await RendezVousService.createRendezVous(req.body);
       res.status(201).json(rdv);
     } catch (err) {
+<<<<<<< HEAD
       console.error(err);
+=======
+>>>>>>> ef61371244d90b551ab9b89b868eeaf3074f404c
       res.status(500).json({ message: "Erreur création rendez-vous", error: err.message });
     }
   }
